@@ -23,6 +23,9 @@ jobs:
           java-version: 21
 
       - uses: android-actions/setup-android@v3
+        with:
+          # Il default ("tools platform-tools") non esiste più nel nuovo sdkmanager.
+          packages: 'platform-tools platforms;android-36'
 
       - name: Dipendenze
         run: npm ci
