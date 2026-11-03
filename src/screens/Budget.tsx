@@ -22,6 +22,7 @@ export function Budget() {
   const [which, setWhich] = useState<'prev' | 'cur'>('cur');
   const { actions } = useStore();
   const [editing, setEditing] = useState<{ id: string; v: string } | null>(null);
+  const [showAll, setShowAll] = useState(false);
   const saveLimit = async () => {
     if (!editing) return;
     const v = parseAmount(editing.v || '0');
@@ -54,7 +55,7 @@ export function Budget() {
       </Card>
       <div className="muted" style={{ fontSize: 12 }}>Tocca il nome di una categoria per cambiarne il limite mensile.</div>
       <div className="grid">
-        {budgets.map((b) => (
+        {budgets.filter((b) => showAll || b.monthly_budget > 0 || b.spent > 0 || editing?.id === b.id).map((b) => (
           <div key={b.id} className="card" style={{ padding: '18px 20px', gap: 10 }}>
             <div className="between pressable" onClick={() => setEditing({ id: b.id, v: num(b.monthly_budget) })} style={{ alignItems: 'baseline' }}><span style={{ fontWeight: 600 }}>{b.name}</span><span className="mono muted" style={{ fontSize: 12 }}>{Math.round(b.pct)}%</span></div>
             {editing?.id === b.id && (
@@ -64,14 +65,26 @@ export function Budget() {
                 <button className="btn xs" onClick={saveLimit}>Salva limite</button>
               </div>
             )}
-            <Bar pct={b.pct} color={b.over ? 'var(--neg)' : undefined} />
-            <div className="between" style={{ gap: 8, fontSize: 13 }}>
-              <span className="mono">{eur(b.spent)} <span className="muted">/ {eur(b.monthly_budget)}</span></span>
-              <span style={{ color: b.over ? 'var(--neg)' : 'var(--muted)', whiteSpace: 'nowrap' }}>{b.over ? `Sforato di ${eur(b.spent - b.monthly_budget)}` : `Restano ${eur(b.monthly_budget - b.spent)}`}</span>
-            </div>
+            {b.monthly_budget > 0 ? (
+              <>
+                <Bar pct={b.pct} color={b.over ? 'var(--neg)' : undefined} />
+                <div className="between" style={{ gap: 8, fontSize: 13 }}>
+                  <span className="mono">{eur(b.spent)} <span className="muted">/ {eur(b.monthly_budget)}</span></span>
+                  <span style={{ color: b.over ? 'var(--neg)' : 'var(--muted)', whiteSpace: 'nowrap' }}>{b.over ? `Sforato di ${eur(b.spent - b.monthly_budget)}` : `Restano ${eur(b.monthly_budget - b.spent)}`}</span>
+                </div>
+              </>
+            ) : (
+              <div className="between" style={{ gap: 8, fontSize: 13 }}>
+                <span className="mono">{eur(b.spent)}</span>
+                <span className="muted" style={{ whiteSpace: 'nowrap' }}>Nessun limite</span>
+              </div>
+            )}
           </div>
         ))}
       </div>
+      {!showAll && budgets.some((b) => !(b.monthly_budget > 0 || b.spent > 0)) && (
+        <div><button className="link" onClick={() => setShowAll(true)}>Mostra le categorie senza limite e senza spese ({budgets.filter((b) => !(b.monthly_budget > 0 || b.spent > 0)).length})</button></div>
+      )}
     </div>
   );
 }

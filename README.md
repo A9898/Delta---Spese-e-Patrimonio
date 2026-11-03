@@ -65,7 +65,7 @@ L'accesso alle notifiche si concede all'ultimo passaggio dell'introduzione, che 
 Il plugin è scritto in Java, non in Kotlin come suggeriva l'handoff: il progetto Capacitor generato è in Java e così non serve configurare il plugin Gradle di Kotlin.
 
 ### Prezzi e saldi
-- **ETF**: endpoint chart di Yahoo Finance, gratuito e senza chiave, con il simbolo in `instruments.price_symbol` (es. `VWCE.DE`). Le quotazioni in USD o GBp vengono convertite in EUR. Su Android le richieste passano da `CapacitorHttp`, quindi senza problemi di CORS. L'aggiornamento avviene all'apertura dell'app e ogni 15 minuti.
+- **ETF**: se hai inserito solo l'ISIN o il ticker, il simbolo di quotazione viene cercato su Yahoo, preferendo le borse in euro (Xetra, Milano, …). Endpoint chart di Yahoo Finance, gratuito e senza chiave, con il simbolo in `instruments.price_symbol` (es. `VWCE.DE`). Le quotazioni in USD o GBp vengono convertite in EUR. Su Android le richieste passano da `CapacitorHttp`, quindi senza problemi di CORS. L'aggiornamento avviene all'apertura dell'app, al ritorno in primo piano se sono passati 15 minuti, ogni 15 minuti e con il tasto ↻ accanto a "PREZZI".
 - **Crypto**: CoinGecko, in EUR con la variazione nelle 24 ore. Il saldo dei wallet si legge da mempool.space (indirizzo BTC), blockchain.info (xpub/ypub/zpub) o da un nodo RPC pubblico (ETH). L'app rifiuta seed phrase e chiavi private.
 - **Fondo Cometa**: il valore quota si aggiorna toccando "QUOTA MENSILE" nella card.
 - Nel browser in sviluppo i prezzi sono simulati, come nel prototipo.
@@ -78,6 +78,15 @@ Il plugin è scritto in Java, non in Kotlin come suggeriva l'handoff: il progett
 - **Immediate**: spese Google Pay, budget oltre l'80% (una volta per categoria e mese) e movimenti di mercato oltre il 3% (disattivati di default).
 - **Centro notifiche**: si apre dalla campanella e ha le schede *Recenti* e *Preferenze*.
 - **Conferma PAC**: aggiunge quote pari a importo / prezzo corrente.
+
+### Modificare un titolo
+In Investimenti tocchi un titolo (o "Modifica" sul fondo, o una riga crypto) per cambiare nome, ticker, ISIN, simbolo di quotazione e prezzo manuale. Puoi anche modificare o eliminare le singole operazioni, oppure eliminare il titolo. Se un titolo non si aggiorna, accanto al ticker compare "● non aggiornato" e nella scheda trovi il motivo.
+
+### Import da Cashew
+Altro › Importa da Cashew: si sceglie l'export CSV, si vede un riepilogo e si abbinano le categorie.
+- I conti nuovi prendono il saldo calcolato da Cashew; quelli già presenti con lo stesso nome restano invariati.
+- Correzioni di saldo e trasferimenti non diventano movimenti; le rate future e le valute diverse dall'euro vengono saltate.
+- Reimportare lo stesso file non crea doppioni.
 
 ### Backup
 In *Altro › Backup e dati* si esporta un JSON cifrato con AES-256-GCM, con la chiave derivata dalla password tramite PBKDF2-SHA256 a 250.000 iterazioni. Il file si salva dal selettore di Android (Download, Google Drive…). L'app ricorda la data dell'ultimo backup e consiglia di farne uno a settimana. Il salvataggio automatico su file non è ancora implementato: servirebbe un URI persistente dello Storage Access Framework.
@@ -94,4 +103,4 @@ Attenzione: disinstallare l'app cancella i dati. Fai un backup prima, se mai ti 
 ## Note e limiti noti
 - Il formato delle notifiche di Google Wallet cambia tra versioni e lingue. Il parser copre i formati più comuni ed è testato in `src/tests/core.test.ts`, ma va verificato con le tue notifiche reali.
 - L'endpoint di Yahoo Finance non è ufficiale. Se smette di funzionare, basta sostituire `yahooProvider` in `src/services/prices.ts` con un altro provider (interfaccia `PriceProvider`).
-- Il simbolo di quotazione si deduce solo per i ticker inseriti a mano. Per un ETF aggiunto tramite ISIN va impostato il simbolo (es. `XXXX.DE`), altrimenti il valore resta al prezzo d'acquisto.
+- Se la ricerca automatica sceglie la borsa sbagliata, il simbolo si corregge dalla scheda del titolo (tasto "Cerca").

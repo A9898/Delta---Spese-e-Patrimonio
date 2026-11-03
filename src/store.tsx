@@ -11,8 +11,9 @@ import { eur } from './lib/format';
 import { fetchBalance } from './services/blockchain';
 import { categorize, isDuplicate, parseWalletNotification, rulePatternFor, WALLET_PACKAGES, type RawNotification } from './services/gpayParser';
 import { notifyNow, onNotificationAction, registerActions, rescheduleAll } from './services/localNotifications';
-import { refreshIntervalMs, refreshPrices } from './services/prices';
+import { refreshIntervalMs, refreshPrices, simulating } from './services/prices';
 import { startWalletListener } from './services/walletListener';
+import { toTransactions, type CashewPlan } from './services/cashewImport';
 
 const uid = (p: string) => `${p}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 
@@ -35,12 +36,15 @@ export interface Derived {
 
 interface UI {
   screen: Screen;
-  sheet: null | 'expense' | 'op' | 'wallet' | 'account' | 'payment' | 'goal' | { tx: string };
+  sheet: null | 'expense' | 'op' | 'wallet' | 'account' | 'payment' | 'goal' | 'instrument' | 'walletEdit' | 'importCashew' | { tx: string };
   editId: string | null;
   notifOpen: boolean;
   onboarding: number; // -1 = chiuso
   pricesAt: number;
   priceError: string | null;
+  /** instrument_id → errore dell'ultimo aggiornamento */
+  priceErrors: Record<string, string>;
+  refreshing: boolean;
   editAccount: string | null;
 }
 
@@ -196,7 +200,7 @@ function makeActions(repos: Repos, get: () => Dump, set: SetData, setUi: (p: Par
       setUi({ sheet: null });
     },
 
-    async saveOperation(o: { side: 'buy' | 'sell'; kind: 'ETF' | 'Crypto' | 'Fondo pensione'; symbol: string; qty: number; price: number; date: string; monthly: boolean }) {
+    async saveOperation(o: { side: 'buy' | 'sell'; kind: 'ETF' | 'Crypto' | 'Fondo pensione'; symbol: string; qty: number; price: number; date: string; monthly: boolean; skipRefresh?: boolean }) {
       const d = get();
       const T = o.symbol.trim().toUpperCase();
       let ins: Instrument | undefined;
@@ -205,12 +209,12 @@ function makeActions(repos: Repos, get: () => Dump, set: SetData, setUi: (p: Par
       else ins = d.instruments.find((i) => i.kind === 'crypto' && i.ticker === T);
       if (!ins) {
         const isIsin = /^[A-Z]{2}[A-Z0-9]{9}\d$/.test(T);
-        const ticker = o.kind === 'Fondo pensione' ? 'FONDO' : isIsin ? T.slice(-6) : T;
+        const ticker = o.kind === 'Fondo pensione' ? 'FONDO' : T; // con l'ISIN il ticker vero arriva dalla ricerca del simbolo
         ins = {
           id: uid('ins'), kind: o.kind === 'ETF' ? 'etf' : o.kind === 'Crypto' ? 'crypto' : 'fondo', ticker,
           isin: isIsin ? T : null, name: o.kind === 'Fondo pensione' ? 'Fondo pensione' : 'Aggiunto da te',
           color: 'rgba(95,191,138,0.15)',
-          price_symbol: o.kind === 'Crypto' ? ({ BTC: 'bitcoin', ETH: 'ethereum', SOL: 'solana', ADA: 'cardano' } as Record<string, string>)[T] ?? T.toLowerCase() : o.kind === 'ETF' && !isIsin ? T : null,
+          price_symbol: o.kind === 'Crypto' ? ({ BTC: 'bitcoin', ETH: 'ethereum', SOL: 'solana', ADA: 'cardano' } as Record<string, string>)[T] ?? null : null,
         };
         await repos.instruments.upsert(ins);
         const newIns = ins;
@@ -238,13 +242,15 @@ function makeActions(repos: Repos, get: () => Dump, set: SetData, setUi: (p: Par
         set((x) => ({ ...x, scheduled_payments: [...x.scheduled_payments, pay] }));
       }
       setUi({ sheet: null, screen: 'inv' });
+      if (!o.skipRefresh && ins.kind !== 'fondo') void this.refreshPricesNow();
     },
 
     async importOperations(rows: { date: string; symbol: string; side: 'buy' | 'sell'; qty: number; price: number }[]) {
       for (const r of rows) {
         const crypto = /^(BTC|ETH|SOL|ADA|XRP|DOT|LTC)$/.test(r.symbol);
-        await this.saveOperation({ side: r.side, kind: crypto ? 'Crypto' : 'ETF', symbol: r.symbol, qty: r.qty, price: r.price, date: r.date, monthly: false });
+        await this.saveOperation({ side: r.side, kind: crypto ? 'Crypto' : 'ETF', symbol: r.symbol, qty: r.qty, price: r.price, date: r.date, monthly: false, skipRefresh: true });
       }
+      void this.refreshPricesNow();
     },
 
     async addWallet(network: Network, address: string, label: string) {
@@ -346,6 +352,128 @@ function makeActions(repos: Repos, get: () => Dump, set: SetData, setUi: (p: Par
       setUi({ sheet: null, editAccount: null });
     },
 
+    /** Aggiorna subito i prezzi (anche dal tasto ↻) e salva i simboli trovati dall'ISIN. */
+    async refreshPricesNow() {
+      setUi({ refreshing: true });
+      try {
+        const d = get();
+        const res = await refreshPrices(d.instruments, Object.fromEntries(d.prices.map((p) => [p.instrument_id, p])));
+        for (const [id, c] of Object.entries(res.resolved)) {
+          const ins = get().instruments.find((i) => i.id === id);
+          if (!ins) continue;
+          const derivedTicker = !!ins.isin && (ins.ticker === ins.isin || ins.isin.endsWith(ins.ticker));
+          const row: Instrument = {
+            ...ins, price_symbol: c.symbol,
+            ticker: derivedTicker ? c.symbol.split('.')[0] : ins.ticker,
+            name: ins.name === 'Aggiunto da te' || !ins.name ? c.name : ins.name,
+          };
+          await repos.instruments.upsert(row);
+          set((x) => ({ ...x, instruments: x.instruments.map((y) => (y.id === id ? row : y)) }));
+        }
+        await this.updatePrices(res.prices);
+        const n = Object.keys(res.errors).length;
+        setUi({
+          pricesAt: res.prices.length ? Date.now() : get().prices.reduce((a, p) => Math.max(a, p.updated_at), 0),
+          priceErrors: res.errors,
+          priceError: n ? (res.prices.length ? `${n} titoli non aggiornati: tocca il titolo per vedere perché.` : 'Quotazioni non raggiungibili, mostro gli ultimi prezzi salvati.') : null,
+        });
+      } catch (e) {
+        setUi({ priceError: `Aggiornamento non riuscito: ${(e as Error).message}` });
+      } finally {
+        setUi({ refreshing: false });
+      }
+      this.refreshWallets();
+    },
+
+    /**
+     * Import da Cashew. mapping: categoria Cashew → categoria app ("+Nome" = crea nuova categoria senza limite).
+     * I conti nuovi prendono il saldo calcolato da Cashew; quelli già presenti (stesso nome) non cambiano saldo.
+     */
+    async importCashew(plan: CashewPlan, mapping: Record<string, string>) {
+      const d = get();
+      const special = new Set(['Entrate', 'Investimenti']);
+      const newCats = [...new Set(Object.values(mapping).map((v) => v.replace(/^\+/, '')))]
+        .filter((n) => !special.has(n) && !d.categories.some((c) => c.name.toLowerCase() === n.toLowerCase()));
+      const catRows = newCats.map((name, i) => ({ id: uid('cat'), name, monthly_budget: 0, sort: d.categories.length + i }));
+      if (catRows.length) {
+        await repos.categories.upsert(catRows);
+        set((x) => ({ ...x, categories: [...x.categories, ...catRows] }));
+      }
+      const accountIds: Record<string, string> = {};
+      const newAccounts: Account[] = [];
+      let kept = 0;
+      for (const a of plan.accounts) {
+        const ex = d.accounts.find((x) => x.name.toLowerCase() === a.name.toLowerCase());
+        if (ex) { accountIds[a.name] = ex.id; kept++; continue; }
+        const row: Account = {
+          id: uid('acc'), name: a.name, subtitle: 'Importato da Cashew', type: a.type, balance_manual: a.balance,
+          balance_as_of: Date.now(), card_last4: null, gpay_linked: false, sort: d.accounts.length + newAccounts.length,
+        };
+        newAccounts.push(row);
+        accountIds[a.name] = row.id;
+      }
+      if (newAccounts.length) {
+        await repos.accounts.upsert(newAccounts);
+        set((x) => ({ ...x, accounts: [...x.accounts, ...newAccounts] }));
+      }
+      const txs = toTransactions(plan, mapping, accountIds);
+      const existing = new Set(d.transactions.map((t) => t.id));
+      await repos.transactions.upsert(txs);
+      set((x) => {
+        const byId = new Map(x.transactions.map((t) => [t.id, t]));
+        for (const t of txs) byId.set(t.id, t);
+        return { ...x, transactions: [...byId.values()] };
+      });
+      return { added: txs.filter((t) => !existing.has(t.id)).length, updated: txs.filter((t) => existing.has(t.id)).length, accounts: newAccounts.length, keptAccounts: kept, categories: catRows.length };
+    },
+
+    async updateInstrument(ins: Instrument) {
+      await repos.instruments.upsert(ins);
+      set((x) => ({ ...x, instruments: x.instruments.map((y) => (y.id === ins.id ? ins : y)) }));
+    },
+
+    /** Elimina il titolo con tutte le sue operazioni e il prezzo salvato. */
+    async deleteInstrument(id: string) {
+      const d = get();
+      for (const o of d.operations.filter((o) => o.instrument_id === id)) await repos.operations.remove(o.id);
+      await repos.prices.remove(id);
+      await repos.instruments.remove(id);
+      set((x) => ({
+        ...x,
+        instruments: x.instruments.filter((i) => i.id !== id),
+        operations: x.operations.filter((o) => o.instrument_id !== id),
+        prices: x.prices.filter((p) => p.instrument_id !== id),
+      }));
+      setUi({ sheet: null, editId: null });
+    },
+
+    async updateOperation(op: Operation) {
+      await repos.operations.upsert(op);
+      set((x) => ({ ...x, operations: x.operations.map((y) => (y.id === op.id ? op : y)) }));
+    },
+
+    async deleteOperation(id: string) {
+      await repos.operations.remove(id);
+      set((x) => ({ ...x, operations: x.operations.filter((o) => o.id !== id) }));
+    },
+
+    async setManualPrice(instrumentId: string, price: number) {
+      if (!(price > 0)) return;
+      const cur = get().prices.find((p) => p.instrument_id === instrumentId);
+      await setPrice({ instrument_id: instrumentId, price, prev_close: cur?.prev_close || price, updated_at: Date.now() });
+    },
+
+    async updateWallet(w: Wallet) {
+      await repos.wallets.upsert(w);
+      set((x) => ({ ...x, wallets: x.wallets.map((y) => (y.id === w.id ? w : y)) }));
+    },
+
+    async deleteWallet(id: string) {
+      await repos.wallets.remove(id);
+      set((x) => ({ ...x, wallets: x.wallets.filter((w) => w.id !== id) }));
+      setUi({ sheet: null, editId: null });
+    },
+
     async setPref(key: PrefKey, enabled: boolean) {
       await repos.prefs.upsert({ key, enabled });
       set((x) => ({ ...x, notification_prefs: upsertIn(x.notification_prefs, { key, enabled }, 'key') }));
@@ -436,7 +564,7 @@ function makeActions(repos: Repos, get: () => Dump, set: SetData, setUi: (p: Par
 export function StoreProvider({ children, db: injected }: { children: ReactNode; db?: Database }) {
   const [ready, setReady] = useState(false);
   const [data, setData] = useState<Dump>(EMPTY);
-  const [ui, setUiState] = useState<UI>({ screen: 'home', sheet: null, notifOpen: false, onboarding: -1, pricesAt: Date.now(), priceError: null, editAccount: null, editId: null });
+  const [ui, setUiState] = useState<UI>({ screen: 'home', sheet: null, notifOpen: false, onboarding: -1, pricesAt: Date.now(), priceError: null, priceErrors: {}, refreshing: false, editAccount: null, editId: null });
   const dataRef = useRef(data);
   dataRef.current = data;
   const reposRef = useRef<Repos | null>(null);
@@ -487,26 +615,26 @@ export function StoreProvider({ children, db: injected }: { children: ReactNode;
     return () => { alive = false; };
   }, [injected, set, setUi]);
 
-  // Prezzi: all'apertura e poi a intervalli.
+  // Prezzi: all'apertura e poi a intervalli (più il tasto ↻ in Investimenti).
   useEffect(() => {
     if (!actions) return;
-    let stop = false;
-    const tick = async () => {
-      try {
-        const d = dataRef.current;
-        const { prices } = await refreshPrices(d.instruments, Object.fromEntries(d.prices.map((p) => [p.instrument_id, p])));
-        if (stop) return;
-        await actions.updatePrices(prices);
-        setUi({ pricesAt: Date.now(), priceError: prices.length ? null : 'Quotazioni non raggiungibili, mostro gli ultimi prezzi salvati.' });
-      } catch {
-        setUi({ priceError: 'Quotazioni non raggiungibili, mostro gli ultimi prezzi salvati.' });
-      }
+    if (simulating()) {
+      // Sviluppo nel browser: prezzi simulati, nessuna rete.
+      const tick = () => actions.refreshPricesNow();
+      tick();
+      const id = setInterval(tick, refreshIntervalMs());
+      return () => clearInterval(id);
+    }
+    actions.refreshPricesNow();
+    const id = setInterval(() => actions.refreshPricesNow(), refreshIntervalMs());
+    // Al ritorno in primo piano, se i prezzi hanno più di 15 minuti.
+    const onVis = () => {
+      const last = dataRef.current.prices.reduce((a, p) => Math.max(a, p.updated_at), 0);
+      if (document.visibilityState === 'visible' && Date.now() - last > refreshIntervalMs()) actions.refreshPricesNow();
     };
-    tick();
-    actions.refreshWallets();
-    const id = setInterval(tick, refreshIntervalMs());
-    return () => { stop = true; clearInterval(id); };
-  }, [actions, setUi]);
+    document.addEventListener('visibilitychange', onVis);
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVis); };
+  }, [actions]);
 
   // Google Pay (listener nativo) e azioni delle notifiche di sistema.
   useEffect(() => {

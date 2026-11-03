@@ -140,3 +140,5 @@ a { color: var(--accent); }
   .pressable:active, .btn-ghost:active { background: var(--hover); }
   .btn:active, .plus:active { background: var(--accent-h); }
 }
+
+@keyframes spin { to { transform: rotate(360deg); } }

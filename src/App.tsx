@@ -4,6 +4,8 @@ import { Capacitor } from '@capacitor/core';
 import { Icon } from './components/ui';
 import { NotificationCenter } from './components/Notifications';
 import { Onboarding } from './components/Onboarding';
+import { InstrumentSheet, WalletEditSheet } from './components/InstrumentSheet';
+import { ImportCashewSheet } from './components/ImportCashewSheet';
 import { AccountSheet, ExpenseSheet, GoalSheet, OperationSheet, PaymentSheet, TxSheet } from './components/Sheets';
 import type { Screen } from './data/types';
 import { Accounts } from './screens/Accounts';
@@ -141,6 +143,9 @@ export function App() {
       {(ui.sheet === 'op' || ui.sheet === 'wallet') && <OperationSheet desktop={desktop} initialMode={ui.sheet === 'wallet' ? 'wallet' : 'op'} />}
       {ui.sheet === 'account' && <AccountSheet key={ui.editAccount ?? 'new'} desktop={desktop} />}
       {ui.sheet === 'payment' && <PaymentSheet key={ui.editId ?? 'new'} desktop={desktop} />}
+      {ui.sheet === 'instrument' && <InstrumentSheet key={ui.editId ?? ''} desktop={desktop} />}
+      {ui.sheet === 'walletEdit' && <WalletEditSheet key={ui.editId ?? ''} desktop={desktop} />}
+      {ui.sheet === 'importCashew' && <ImportCashewSheet desktop={desktop} />}
       {ui.sheet === 'goal' && <GoalSheet key={ui.editId ?? 'new'} desktop={desktop} />}
       {ui.sheet && typeof ui.sheet === 'object' && <TxSheet txId={ui.sheet.tx} desktop={desktop} />}
       {ui.notifOpen && <NotificationCenter desktop={desktop} />}

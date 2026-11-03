@@ -18,12 +18,20 @@ export function Investments({ desktop }: { desktop: boolean }) {
   const { d, data, ui, setUi, actions } = useStore();
   const [csvMsg, setCsvMsg] = useState<string | null>(null);
   const [navEdit, setNavEdit] = useState<string | null>(null);
-  const time = new Date(ui.pricesAt).toLocaleTimeString('it-IT');
+  // Ora dell'ultimo prezzo davvero ricevuto (non del tentativo): se è vecchio si vede la data.
+  const etfIds = new Set(d.etf.map((h) => h.instrument.id));
+  const lastTs = data.prices.filter((p) => etfIds.has(p.instrument_id)).reduce((a, p) => Math.max(a, p.updated_at), 0);
+  const time = !lastTs ? '—' : new Date(lastTs).toDateString() === new Date().toDateString()
+    ? new Date(lastTs).toLocaleTimeString('it-IT')
+    : new Date(lastTs).toLocaleString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   const pl = d.etfValue - d.etfCost;
   const fundPrice = d.fund ? data.prices.find((p) => p.instrument_id === d.fund!.instrument.id) : undefined;
   const fundDate = fundPrice ? parseIso(new Date(fundPrice.updated_at).toISOString().slice(0, 10)) : null;
   const crPl = d.cryptoValue - d.cryptoCost;
   const fundOps = d.fund ? data.operations.filter((o) => o.instrument_id === d.fund!.instrument.id).length : 0;
+
+  const edit = (id: string) => setUi({ sheet: 'instrument', editId: id });
+  const stale = (id: string) => (ui.priceErrors[id] ? <span title={ui.priceErrors[id]} style={{ color: 'var(--neg)', marginLeft: 6, fontSize: 11 }}>● non aggiornato</span> : null);
 
   const importCsv = async () => {
     const f = await pickFile('.csv,text/csv');
@@ -38,7 +46,12 @@ export function Investments({ desktop }: { desktop: boolean }) {
       <Card>
         <div className="between" style={{ flexWrap: 'wrap' }}>
           <Kicker>ETF · Conto titoli</Kicker>
-          <div className="mono muted" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}><LiveDot /><span>PREZZI · {time}</span></div>
+          <button onClick={() => actions.refreshPricesNow()} disabled={ui.refreshing} aria-label="Aggiorna i prezzi"
+            className="mono muted" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, background: 'none', border: '1px solid var(--border)', padding: '5px 8px', cursor: 'pointer', color: 'var(--muted)' }}>
+            <LiveDot />
+            <span>{ui.refreshing ? 'AGGIORNAMENTO…' : `PREZZI · ${time}`}</span>
+            <span style={{ display: 'inline-block', animation: ui.refreshing ? 'spin 1s linear infinite' : 'none', color: 'var(--text)' }}>↻</span>
+          </button>
         </div>
         <div className="hero">{eur(d.etfValue)}</div>
         <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', fontSize: 13 }}>
@@ -47,7 +60,7 @@ export function Investments({ desktop }: { desktop: boolean }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span className="muted">Capitale investito</span><span className="mono">{eur(d.etfCost)}</span></div>
         </div>
         <div className="stacked" style={{ height: 10 }}>{d.etf.map((h) => <div key={h.instrument.id} style={{ width: `${d.etfValue ? h.value / d.etfValue * 100 : 0}%`, background: h.instrument.color }} />)}</div>
-        <div className="muted" style={{ fontSize: 12 }}>Quantità registrate da te · prezzi da quotazioni pubbliche per ISIN</div>
+        <div className="muted" style={{ fontSize: 12 }}>Quantità registrate da te · prezzi da quotazioni pubbliche per ISIN · tocca un titolo per modificarlo</div>
         {ui.priceError && <div className="muted" style={{ fontSize: 12 }}>{ui.priceError}</div>}
       </Card>
 
@@ -58,11 +71,11 @@ export function Investments({ desktop }: { desktop: boolean }) {
               <span>Titolo</span><span style={{ textAlign: 'right' }}>Quote</span><span style={{ textAlign: 'right' }}>Prezzo</span><span style={{ textAlign: 'right' }}>Oggi</span><span style={{ textAlign: 'right' }}>Valore</span><span style={{ textAlign: 'right' }}>P/L</span>
             </div>
             {d.etf.map((h) => (
-              <div key={h.instrument.id} className="row mono" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,2.4fr) 1fr 1fr 1fr 1.2fr 1.2fr', gap: 12, padding: '14px 0', alignItems: 'center', fontSize: 13 }}>
+              <div key={h.instrument.id} className="row mono pressable" onClick={() => edit(h.instrument.id)} style={{ display: 'grid', gridTemplateColumns: 'minmax(0,2.4fr) 1fr 1fr 1fr 1.2fr 1.2fr', gap: 12, padding: '14px 0', alignItems: 'center', fontSize: 13 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, fontFamily: 'var(--sans)' }}>
                   <span style={{ width: 8, height: 8, background: h.instrument.color, flexShrink: 0 }} />
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-                    <span className="mono" style={{ fontWeight: 600 }}>{h.instrument.ticker}</span>
+                    <span className="mono" style={{ fontWeight: 600 }}>{h.instrument.ticker}{stale(h.instrument.id)}</span>
                     <span className="muted ellipsis" style={{ fontSize: 12 }}>{h.instrument.name} · {h.instrument.isin ?? '—'}</span>
                   </div>
                 </div>
@@ -76,10 +89,10 @@ export function Investments({ desktop }: { desktop: boolean }) {
           </>
         ) : (
           d.etf.map((h) => (
-            <div key={h.instrument.id} className="row" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: '6px 12px', padding: '14px 0' }}>
+            <div key={h.instrument.id} className="row pressable" onClick={() => edit(h.instrument.id)} style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: '6px 12px', padding: '14px 0' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
                 <span style={{ width: 8, height: 8, background: h.instrument.color, flexShrink: 0 }} />
-                <span className="mono" style={{ fontWeight: 600 }}>{h.instrument.ticker}</span>
+                <span className="mono" style={{ fontWeight: 600 }}>{h.instrument.ticker}{stale(h.instrument.id)}</span>
                 <span className="muted ellipsis" style={{ fontSize: 12 }}>{h.instrument.name}</span>
               </div>
               <span className="mono" style={{ textAlign: 'right' }}>{eur(h.value)}</span>
@@ -96,7 +109,10 @@ export function Investments({ desktop }: { desktop: boolean }) {
           <Card style={{ gap: 12 }}>
             <div className="between">
               <Kicker>Previdenza · Fondo Cometa</Kicker>
-              <button className="badge outline" style={{ cursor: 'pointer' }} onClick={() => setNavEdit(num(d.fund!.price))}>QUOTA MENSILE</button>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <button className="badge outline" style={{ cursor: 'pointer' }} onClick={() => setNavEdit(num(d.fund!.price))}>QUOTA MENSILE</button>
+                <button className="link" onClick={() => edit(d.fund!.instrument.id)}>Modifica</button>
+              </div>
             </div>
             <div className="big28">{eur(d.fund.value)}</div>
             <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', fontSize: 13 }}>
@@ -126,8 +142,9 @@ export function Investments({ desktop }: { desktop: boolean }) {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {d.crypto.map((c) => (
-              <div key={c.key} style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: '4px 12px', padding: '10px 0', borderTop: '1px solid var(--row)' }}>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}><span className="mono" style={{ fontWeight: 600 }}>{c.instrument.ticker}</span><span className="muted" style={{ fontSize: 12 }}>{c.label}</span></div>
+              <div key={c.key} className="pressable" onClick={() => (data.wallets.some((w) => w.id === c.key) ? setUi({ sheet: 'walletEdit', editId: c.key }) : edit(c.instrument.id))}
+                style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: '4px 12px', padding: '10px 0', borderTop: '1px solid var(--row)' }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}><span className="mono" style={{ fontWeight: 600 }}>{c.instrument.ticker}{stale(c.instrument.id)}</span><span className="muted" style={{ fontSize: 12 }}>{c.label}</span></div>
                 <span className="mono" style={{ textAlign: 'right' }}>{eur(c.value)}</span>
                 <span className="mono muted" style={{ fontSize: 12 }}>{cryptoQty(c.qty)} {c.instrument.ticker} × {eur(c.price)}</span>
                 <span className="mono" style={{ fontSize: 12, textAlign: 'right', color: pn(c.dayPct) }}>{pct(c.dayPct)} 24h</span>
