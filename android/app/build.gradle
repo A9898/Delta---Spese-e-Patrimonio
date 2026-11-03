@@ -1,5 +1,8 @@
 apply plugin: 'com.android.application'
 
+// In CI il numero di build cresce a ogni run, così Android accetta l'aggiornamento.
+def ciBuildNumber = Integer.parseInt(System.getenv("GITHUB_RUN_NUMBER") ?: "1")
+
 android {
     namespace = "it.patrimonio.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,9 +10,8 @@ android {
         applicationId "it.patrimonio.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        // In CI il numero di build cresce a ogni run, così Android accetta l'aggiornamento.
-        versionCode (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInteger()
-        versionName "1.0.${System.getenv("GITHUB_RUN_NUMBER") ?: "0"}"
+        versionCode ciBuildNumber
+        versionName "1.0.${ciBuildNumber}"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
