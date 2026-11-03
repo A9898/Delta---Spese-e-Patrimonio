@@ -171,3 +171,22 @@ export function buildSeed(now = new Date()): Dump {
 function monthLong(d: Date) {
   return ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'][d.getMonth()];
 }
+
+/**
+ * Stato iniziale vuoto per l'uso reale: nessun conto, movimento o investimento.
+ * Restano solo le categorie con i budget del design, gli strumenti crypto di base
+ * (servono per i wallet) e le preferenze delle notifiche.
+ */
+export function buildBaseline(keep?: Partial<Pick<Dump, 'categories' | 'notification_prefs' | 'settings'>>): Dump {
+  const demo = buildSeed();
+  const settings = (keep?.settings ?? []).filter((s) => s.key !== 'seeded' && s.key !== 'user_name');
+  return {
+    accounts: [], transactions: [], merchant_rules: [], operations: [], wallets: [], scheduled_payments: [],
+    goals: [], notifications: [], networth_snapshots: [],
+    categories: keep?.categories?.length ? keep.categories : demo.categories,
+    instruments: demo.instruments.filter((i) => i.kind === 'crypto'),
+    prices: demo.prices.filter((p) => p.instrument_id === 'btc' || p.instrument_id === 'eth'),
+    notification_prefs: keep?.notification_prefs?.length ? keep.notification_prefs : demo.notification_prefs,
+    settings,
+  };
+}

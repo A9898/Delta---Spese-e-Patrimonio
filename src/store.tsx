@@ -1,9 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { openDatabase, type Database } from './data/db';
 import { createRepos, dumpAll, restoreAll, type Dump, type Repos } from './data/repos';
-import { buildSeed } from './data/seed';
+import { buildBaseline, buildSeed } from './data/seed';
 import type {
-  Account, AppNotification, Goal, Instrument, Network, Operation, PrefKey, Price, Screen, Transaction, Wallet,
+  Account, AppNotification, Goal, Instrument, Network, Operation, PrefKey, Price, ScheduledPayment, Screen, Transaction, Wallet,
 } from './data/types';
 import { accountBalance, cryptoRows, positionFromOps, spentByCategory, valuePosition } from './domain/calc';
 import { iso, monthKey, parseIso } from './lib/dates';
@@ -35,7 +35,8 @@ export interface Derived {
 
 interface UI {
   screen: Screen;
-  sheet: null | 'expense' | 'op' | 'wallet' | 'account' | { tx: string };
+  sheet: null | 'expense' | 'op' | 'wallet' | 'account' | 'payment' | 'goal' | { tx: string };
+  editId: string | null;
   notifOpen: boolean;
   onboarding: number; // -1 = chiuso
   pricesAt: number;
@@ -304,6 +305,47 @@ function makeActions(repos: Repos, get: () => Dump, set: SetData, setUi: (p: Par
       set((x) => ({ ...x, goals: x.goals.map((y) => (y.id === goalId ? row : y)) }));
     },
 
+    async savePayment(p: Omit<ScheduledPayment, 'id'> & { id?: string }) {
+      const row: ScheduledPayment = { ...p, id: p.id ?? uid('pay') };
+      await repos.payments.upsert(row);
+      set((x) => ({ ...x, scheduled_payments: upsertIn(x.scheduled_payments, row, 'id') }));
+      setUi({ sheet: null, editId: null });
+    },
+
+    async deletePayment(id: string) {
+      await repos.payments.remove(id);
+      set((x) => ({ ...x, scheduled_payments: x.scheduled_payments.filter((p) => p.id !== id) }));
+      setUi({ sheet: null, editId: null });
+    },
+
+    async saveGoal(g: Omit<Goal, 'id' | 'sort'> & { id?: string }) {
+      const prev = g.id ? get().goals.find((x) => x.id === g.id) : undefined;
+      const row: Goal = { ...g, id: g.id ?? uid('goal'), sort: prev?.sort ?? get().goals.length };
+      await repos.goals.upsert(row);
+      set((x) => ({ ...x, goals: upsertIn(x.goals, row, 'id') }));
+      setUi({ sheet: null, editId: null });
+    },
+
+    async deleteGoal(id: string) {
+      await repos.goals.remove(id);
+      set((x) => ({ ...x, goals: x.goals.filter((g) => g.id !== id) }));
+      setUi({ sheet: null, editId: null });
+    },
+
+    async setBudget(categoryId: string, monthly: number) {
+      const c = get().categories.find((x) => x.id === categoryId);
+      if (!c || !(monthly >= 0)) return;
+      const row = { ...c, monthly_budget: monthly };
+      await repos.categories.upsert(row);
+      set((x) => ({ ...x, categories: x.categories.map((y) => (y.id === categoryId ? row : y)) }));
+    },
+
+    async deleteAccount(id: string) {
+      await repos.accounts.remove(id);
+      set((x) => ({ ...x, accounts: x.accounts.filter((a) => a.id !== id) }));
+      setUi({ sheet: null, editAccount: null });
+    },
+
     async setPref(key: PrefKey, enabled: boolean) {
       await repos.prefs.upsert({ key, enabled });
       set((x) => ({ ...x, notification_prefs: upsertIn(x.notification_prefs, { key, enabled }, 'key') }));
@@ -356,7 +398,7 @@ function makeActions(repos: Repos, get: () => Dump, set: SetData, setUi: (p: Par
     /** Cancella tutto tranne categorie/budget e preferenze notifiche. */
     async resetToEmpty() {
       const cur = get();
-      const next: Dump = { ...EMPTY, categories: cur.categories, notification_prefs: cur.notification_prefs, settings: [{ key: 'onboarded', value: '1' }] };
+      const next = buildBaseline({ categories: cur.categories, notification_prefs: cur.notification_prefs, settings: [{ key: 'onboarded', value: '1' }] });
       await restoreAll(repos.db, next);
       set(() => next);
     },
@@ -394,7 +436,7 @@ function makeActions(repos: Repos, get: () => Dump, set: SetData, setUi: (p: Par
 export function StoreProvider({ children, db: injected }: { children: ReactNode; db?: Database }) {
   const [ready, setReady] = useState(false);
   const [data, setData] = useState<Dump>(EMPTY);
-  const [ui, setUiState] = useState<UI>({ screen: 'home', sheet: null, notifOpen: false, onboarding: -1, pricesAt: Date.now(), priceError: null, editAccount: null });
+  const [ui, setUiState] = useState<UI>({ screen: 'home', sheet: null, notifOpen: false, onboarding: -1, pricesAt: Date.now(), priceError: null, editAccount: null, editId: null });
   const dataRef = useRef(data);
   dataRef.current = data;
   const reposRef = useRef<Repos | null>(null);
@@ -413,9 +455,16 @@ export function StoreProvider({ children, db: injected }: { children: ReactNode;
       const repos = createRepos(db);
       reposRef.current = repos;
       let dump = await dumpAll(db);
-      const fresh = !dump.settings.length;
-      if (fresh && import.meta.env.VITE_DEMO_SEED !== '0') {
+      const fresh = !dump.settings.length && !dump.categories.length;
+      const hadDemo = dump.settings.some((s) => s.key === 'seeded' && s.value === '1');
+      if (fresh && import.meta.env.VITE_DEMO_SEED === '1') {
+        // Dati del prototipo solo se richiesti esplicitamente (sviluppo).
         dump = buildSeed();
+        await restoreAll(db, dump);
+      } else if (fresh || (hadDemo && import.meta.env.VITE_DEMO_SEED !== '1')) {
+        // Primo avvio, oppure installazione precedente con i dati di esempio: si riparte vuoti.
+        dump = buildBaseline(hadDemo ? { notification_prefs: dump.notification_prefs, settings: dump.settings } : undefined);
+        if (!dump.settings.length) dump.settings = [{ key: 'created_at', value: String(Date.now()) }];
         await restoreAll(db, dump);
       }
       if (!alive) return;

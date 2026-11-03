@@ -39,7 +39,11 @@ export function ExpenseSheet({ desktop }: { desktop: boolean }) {
       </div>
       <Field label="Dove"><input className="input" value={where} onChange={(e) => setWhere(e.target.value)} placeholder="es. Panificio Rossi" /></Field>
       <Field label="Categoria"><Chips options={cats} value={cat} onChange={setCat} /></Field>
-      <Field label="Pagato con"><Chips options={payWith.map((a) => a.name)} value={acc} onChange={setAcc} /></Field>
+      <Field label="Pagato con">
+        {payWith.length
+          ? <Chips options={payWith.map((a) => a.name)} value={acc} onChange={setAcc} />
+          : <span className="muted pretty" style={{ fontSize: 13 }}>Nessun conto ancora: aggiungilo da Altro › Conti e carte per aggiornare anche il saldo.</span>}
+      </Field>
       <button className="btn" onClick={save}>Salva spesa</button>
     </Sheet>
   );
@@ -105,7 +109,10 @@ export function AccountSheet({ desktop }: { desktop: boolean }) {
         </div>
       )}
       {err && <span className="err">{err}</span>}
-      <button className="btn" onClick={save}>Salva</button>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button className="btn" style={{ flex: 1 }} onClick={save}>Salva</button>
+        {ex && <button className="btn-ghost" style={{ color: 'var(--neg)' }} onClick={() => { if (confirm('Eliminare questo conto? I movimenti restano.')) actions.deleteAccount(ex.id); }}>Elimina</button>}
+      </div>
     </Sheet>
   );
 }
@@ -183,6 +190,86 @@ export function OperationSheet({ desktop, initialMode }: { desktop: boolean; ini
           <button className="btn" disabled={busy} onClick={saveWallet}>{busy ? 'Lettura del saldo…' : 'Aggiungi wallet'}</button>
         </div>
       )}
+    </Sheet>
+  );
+}
+
+const PAY_KINDS: [string, string][] = [
+  ['Abbonamento', 'dumbbell'], ['Streaming', 'tv'], ['Musica', 'music'], ['Ricarica', 'smartphone'], ['Bolletta', 'zap'],
+  ['Internet', 'wifi'], ['Assicurazione', 'car'], ['Cloud', 'cloud'], ['Casa', 'house'], ['Altro', 'receipt'],
+];
+
+export function PaymentSheet({ desktop }: { desktop: boolean }) {
+  const { data, ui, setUi, actions } = useStore();
+  const ex = ui.editId ? data.scheduled_payments.find((p) => p.id === ui.editId) : undefined;
+  const accounts = [...data.accounts].sort((a, b) => a.sort - b.sort);
+  const [name, setName] = useState(ex?.name ?? '');
+  const [amt, setAmt] = useState(ex ? num(ex.amount) : '');
+  const [day, setDay] = useState(ex ? String(ex.day_of_month) : '');
+  const [kind, setKind] = useState(ex && !ex.is_pac ? (PAY_KINDS.find((k) => k[0] === ex.kind)?.[0] ?? 'Altro') : 'Abbonamento');
+  const [acc, setAcc] = useState(accounts.find((a) => a.id === ex?.account_id)?.name ?? accounts[0]?.name ?? '');
+  const [err, setErr] = useState<string | null>(null);
+  const close = () => setUi({ sheet: null, editId: null });
+  const save = () => {
+    const v = parseAmount(amt), d = Number(day);
+    if (!name.trim()) return setErr('Dai un nome al pagamento.');
+    if (!(v > 0)) return setErr('Inserisci un importo maggiore di zero.');
+    if (!Number.isInteger(d) || d < 1 || d > 31) return setErr('Il giorno deve essere tra 1 e 31.');
+    const icon = ex?.is_pac ? ex.icon : PAY_KINDS.find((k) => k[0] === kind)![1];
+    actions.savePayment({
+      id: ex?.id, name: name.trim(), amount: v, day_of_month: d, kind: ex?.is_pac ? ex.kind : kind, icon,
+      account_id: accounts.find((a) => a.name === acc)?.id ?? '', is_pac: ex?.is_pac ?? false, instrument_id: ex?.instrument_id ?? null,
+    });
+  };
+  return (
+    <Sheet onClose={close} desktop={desktop}>
+      <div className="between"><span style={{ fontSize: 18, fontWeight: 600 }}>{ex ? 'Modifica pagamento' : 'Nuovo pagamento'}</span><button className="link muted" onClick={close}>Annulla</button></div>
+      <Field label="Nome"><input className="input" value={name} onChange={(e) => { setName(e.target.value); setErr(null); }} placeholder="es. Netflix" /></Field>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <Field label="Importo"><input className="input mono" inputMode="decimal" value={amt} onChange={(e) => { setAmt(e.target.value); setErr(null); }} placeholder="€ 0,00" /></Field>
+        <Field label="Giorno del mese"><input className="input mono" inputMode="numeric" value={day} onChange={(e) => { setDay(e.target.value); setErr(null); }} placeholder="1–31" /></Field>
+      </div>
+      {!ex?.is_pac && <Field label="Tipo"><Chips options={PAY_KINDS.map((k) => k[0])} value={kind} onChange={setKind} /></Field>}
+      {accounts.length > 0 && <Field label="Addebitato su"><Chips options={accounts.map((a) => a.name)} value={acc} onChange={setAcc} /></Field>}
+      {err && <span className="err">{err}</span>}
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button className="btn" style={{ flex: 1 }} onClick={save}>Salva pagamento</button>
+        {ex && <button className="btn-ghost" style={{ color: 'var(--neg)' }} onClick={() => { if (confirm('Eliminare questo pagamento?')) actions.deletePayment(ex.id); }}>Elimina</button>}
+      </div>
+    </Sheet>
+  );
+}
+
+export function GoalSheet({ desktop }: { desktop: boolean }) {
+  const { data, ui, setUi, actions } = useStore();
+  const ex = ui.editId ? data.goals.find((g) => g.id === ui.editId) : undefined;
+  const [name, setName] = useState(ex?.name ?? '');
+  const [target, setTarget] = useState(ex ? num(ex.target) : '');
+  const [saved, setSaved] = useState(ex ? num(ex.saved) : '');
+  const [monthly, setMonthly] = useState(ex ? num(ex.monthly) : '');
+  const [err, setErr] = useState<string | null>(null);
+  const close = () => setUi({ sheet: null, editId: null });
+  const save = () => {
+    const t = parseAmount(target), s = parseAmount(saved || '0'), m = parseAmount(monthly || '0');
+    if (!name.trim()) return setErr('Dai un nome all\'obiettivo.');
+    if (!(t > 0)) return setErr('Il traguardo deve essere maggiore di zero.');
+    if (!(s >= 0) || !(m >= 0)) return setErr('Importi non validi.');
+    actions.saveGoal({ id: ex?.id, name: name.trim(), target: t, saved: Math.min(s, t), monthly: m });
+  };
+  return (
+    <Sheet onClose={close} desktop={desktop}>
+      <div className="between"><span style={{ fontSize: 18, fontWeight: 600 }}>{ex ? 'Modifica obiettivo' : 'Nuovo obiettivo'}</span><button className="link muted" onClick={close}>Annulla</button></div>
+      <Field label="Nome"><input className="input" value={name} onChange={(e) => { setName(e.target.value); setErr(null); }} placeholder="es. Fondo emergenza" /></Field>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <Field label="Traguardo"><input className="input mono" inputMode="decimal" value={target} onChange={(e) => { setTarget(e.target.value); setErr(null); }} placeholder="€ 0,00" /></Field>
+        <Field label="Già messo da parte"><input className="input mono" inputMode="decimal" value={saved} onChange={(e) => { setSaved(e.target.value); setErr(null); }} placeholder="€ 0,00" /></Field>
+      </div>
+      <Field label="Versamento mensile"><input className="input mono" inputMode="decimal" value={monthly} onChange={(e) => { setMonthly(e.target.value); setErr(null); }} placeholder="€ 0,00" /></Field>
+      {err && <span className="err">{err}</span>}
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button className="btn" style={{ flex: 1 }} onClick={save}>Salva obiettivo</button>
+        {ex && <button className="btn-ghost" style={{ color: 'var(--neg)' }} onClick={() => { if (confirm('Eliminare questo obiettivo?')) actions.deleteGoal(ex.id); }}>Elimina</button>}
+      </div>
     </Sheet>
   );
 }

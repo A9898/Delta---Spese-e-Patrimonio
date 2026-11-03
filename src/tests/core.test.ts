@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createMemoryDb } from '../data/db';
 import { createRepos, dumpAll, restoreAll } from '../data/repos';
 import { schemaSql } from '../data/schema';
-import { buildSeed } from '../data/seed';
+import { buildBaseline, buildSeed } from '../data/seed';
 import type { Instrument, Operation } from '../data/types';
 import { accountBalance, flowOf, monthsToGoal, positionFromOps, spentByCategory } from '../domain/calc';
 import { monthKey } from '../lib/dates';
@@ -176,5 +176,20 @@ describe('servizi', () => {
     expect(all.some((n) => n.actionTypeId === 'PAC_CONFIRM')).toBe(true); // PAC di dicembre
     const none = buildSchedule(pays, { pay: false, pac: false, gpay: true, budget: true, market: false, weekly: false }, now);
     expect(none.length).toBe(0);
+  });
+});
+
+describe('stato iniziale vuoto', () => {
+  it('ha solo categorie, strumenti crypto e preferenze', () => {
+    const b = buildBaseline();
+    expect(b.accounts.length + b.transactions.length + b.operations.length + b.wallets.length + b.goals.length + b.scheduled_payments.length + b.notifications.length).toBe(0);
+    expect(b.categories.map((c) => c.name)).toEqual(['Spesa', 'Ristoranti', 'Trasporti', 'Casa', 'Shopping', 'Salute', 'Abbonamenti']);
+    expect(b.instruments.map((i) => i.ticker)).toEqual(['BTC', 'ETH']);
+    expect(derive(b).net).toBe(0);
+  });
+  it('dai dati di esempio tiene preferenze e onboarding, non il nome', () => {
+    const b = buildBaseline({ notification_prefs: [{ key: 'market', enabled: true }], settings: [{ key: 'seeded', value: '1' }, { key: 'user_name', value: 'Marco' }, { key: 'onboarded', value: '1' }] });
+    expect(b.settings).toEqual([{ key: 'onboarded', value: '1' }]);
+    expect(b.notification_prefs).toEqual([{ key: 'market', enabled: true }]);
   });
 });

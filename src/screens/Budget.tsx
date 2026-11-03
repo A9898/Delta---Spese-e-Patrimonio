@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Bar, Card, Kicker, Seg } from '../components/ui';
 import { spentByCategory } from '../domain/calc';
 import { capitalize, daysInMonth, monthKey, MONTHS_LONG } from '../lib/dates';
-import { eur } from '../lib/format';
+import { eur, num, parseAmount } from '../lib/format';
 import { useStore } from '../store';
 
 export function useBudgets(month: Date) {
@@ -20,6 +20,14 @@ export function Budget() {
   const now = new Date();
   const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const [which, setWhich] = useState<'prev' | 'cur'>('cur');
+  const { actions } = useStore();
+  const [editing, setEditing] = useState<{ id: string; v: string } | null>(null);
+  const saveLimit = async () => {
+    if (!editing) return;
+    const v = parseAmount(editing.v || '0');
+    if (v >= 0) await actions.setBudget(editing.id, v);
+    setEditing(null);
+  };
   const month = which === 'cur' ? now : prev;
   const budgets = useBudgets(month);
   const bS = budgets.reduce((a, b) => a + b.spent, 0);
@@ -44,10 +52,18 @@ export function Budget() {
             : `Mese chiuso · ${bS > bT ? 'sforato di ' + eur(bS - bT) : 'avanzati ' + eur(bT - bS)}.`}
         </div>
       </Card>
+      <div className="muted" style={{ fontSize: 12 }}>Tocca il nome di una categoria per cambiarne il limite mensile.</div>
       <div className="grid">
         {budgets.map((b) => (
           <div key={b.id} className="card" style={{ padding: '18px 20px', gap: 10 }}>
-            <div className="between" style={{ alignItems: 'baseline' }}><span style={{ fontWeight: 600 }}>{b.name}</span><span className="mono muted" style={{ fontSize: 12 }}>{Math.round(b.pct)}%</span></div>
+            <div className="between pressable" onClick={() => setEditing({ id: b.id, v: num(b.monthly_budget) })} style={{ alignItems: 'baseline' }}><span style={{ fontWeight: 600 }}>{b.name}</span><span className="mono muted" style={{ fontSize: 12 }}>{Math.round(b.pct)}%</span></div>
+            {editing?.id === b.id && (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input className="input mono" style={{ flex: 1 }} autoFocus inputMode="decimal" aria-label={`Limite ${b.name}`} value={editing.v}
+                  onChange={(e) => setEditing({ id: b.id, v: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && saveLimit()} />
+                <button className="btn xs" onClick={saveLimit}>Salva limite</button>
+              </div>
+            )}
             <Bar pct={b.pct} color={b.over ? 'var(--neg)' : undefined} />
             <div className="between" style={{ gap: 8, fontSize: 13 }}>
               <span className="mono">{eur(b.spent)} <span className="muted">/ {eur(b.monthly_budget)}</span></span>

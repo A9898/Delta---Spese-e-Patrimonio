@@ -18,7 +18,8 @@ export function upcomingPayments(payments: ScheduledPayment[], now = new Date())
 }
 
 export function Calendar() {
-  const { data } = useStore();
+  const { data, setUi } = useStore();
+  const edit = (id: string | null) => setUi({ sheet: 'payment', editId: id });
   const now = new Date();
   const today = now.getDate();
   const [sel, setSel] = useState(today);
@@ -61,7 +62,7 @@ export function Calendar() {
         <div style={{ borderTop: '1px solid var(--row)', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
           <Kicker>{sel} {MONTHS_LONG[now.getMonth()]}</Kicker>
           {dayPays.map((p) => (
-            <div key={p.id} className="between">
+            <div key={p.id} className="between pressable" onClick={() => edit(p.id)}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <IconTile name={p.icon} size={28} />
                 <span>{p.name} <span className="muted" style={{ fontSize: 12 }}>· {p.kind}</span></span>
@@ -75,14 +76,15 @@ export function Calendar() {
       <Card list>
         <div className="kicker" style={{ padding: '14px 0 10px' }}>In arrivo</div>
         {up.map((p) => (
-          <div key={p.id} className="row" style={{ display: 'grid', gridTemplateColumns: '56px 32px minmax(0,1fr) auto', gap: 12, alignItems: 'center', padding: '11px 0' }}>
+          <div key={p.id} className="row pressable" onClick={() => edit(p.id)} style={{ display: 'grid', gridTemplateColumns: '56px 32px minmax(0,1fr) auto', gap: 12, alignItems: 'center', padding: '11px 0' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span className="mono" style={{ fontSize: 13 }}>{p.when}</span><span className="muted" style={{ fontSize: 11 }}>{p.rel}</span></div>
             <IconTile name={p.icon} size={32} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}><span className="ellipsis">{p.name}</span><span className="muted" style={{ fontSize: 12 }}>{p.kind}</span></div>
             <span className="mono">{eur(p.amount)}</span>
           </div>
         ))}
-        {up.length === 0 && <div className="muted row" style={{ fontSize: 13 }}>Nessun altro pagamento questo mese.</div>}
+        {up.length === 0 && <div className="muted row" style={{ fontSize: 13 }}>{data.scheduled_payments.length ? 'Nessun altro pagamento questo mese.' : 'Aggiungi abbonamenti, bollette e ricariche: ti avvisiamo il giorno prima.'}</div>}
+        <div style={{ padding: '14px 0' }}><button className="btn-ghost" onClick={() => edit(null)}>+ Aggiungi pagamento</button></div>
       </Card>
     </div>
   );

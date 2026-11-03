@@ -81,8 +81,16 @@ export function Home() {
           </div>
           <Seg mono options={[['6M', '6M'], ['1A', '1A'], ['2A', '2A']]} value={range} onChange={setRange} />
         </div>
-        <NetChart vals={vals} />
-        <div className="between mono muted" style={{ fontSize: 11 }}><span>{start}</span><span>oggi</span></div>
+        {vals.length > 1 ? (
+          <>
+            <NetChart vals={vals} />
+            <div className="between mono muted" style={{ fontSize: 11 }}><span>{start}</span><span>oggi</span></div>
+          </>
+        ) : (
+          <div className="muted pretty" style={{ height: 180, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', border: '1px dashed var(--border)', fontSize: 13, padding: 20 }}>
+            L'andamento si costruisce da solo: ogni giorno salviamo il valore del patrimonio. Il grafico compare dal mese prossimo.
+          </div>
+        )}
       </Card>
 
       <div className="grid">

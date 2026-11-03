@@ -87,8 +87,8 @@ export function Backup() {
         <div><button className="btn-ghost" onClick={() => actions.setSetting('gpay_regex', regex.trim()).then(() => setMsg({ ok: true, text: 'Formato salvato.' }))}>Salva formato</button></div>
       </Card>
       <Card>
-        <Kicker>Dati di esempio</Kicker>
-        <div className="muted pretty" style={{ fontSize: 13 }}>Al primo avvio l'app contiene dati dimostrativi. Puoi cancellarli e partire da zero (le preferenze delle notifiche restano).</div>
+        <Kicker>Ricomincia da zero</Kicker>
+        <div className="muted pretty" style={{ fontSize: 13 }}>Cancella conti, movimenti, investimenti, pagamenti e obiettivi. Restano le categorie con i loro limiti e le preferenze delle notifiche. Fai prima un backup se pensi di poterli rivolere.</div>
         <div><button className="btn-ghost" style={{ color: 'var(--neg)' }} onClick={() => { if (confirm('Cancellare tutti i dati? Non si può annullare.')) actions.resetToEmpty(); }}>Cancella tutti i dati</button></div>
       </Card>
     </div>

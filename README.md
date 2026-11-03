@@ -82,8 +82,14 @@ Il plugin è scritto in Java, non in Kotlin come suggeriva l'handoff: il progett
 ### Backup
 In *Altro › Backup e dati* si esporta un JSON cifrato con AES-256-GCM, con la chiave derivata dalla password tramite PBKDF2-SHA256 a 250.000 iterazioni. Il file si salva dal selettore di Android (Download, Google Drive…). L'app ricorda la data dell'ultimo backup e consiglia di farne uno a settimana. Il salvataggio automatico su file non è ancora implementato: servirebbe un URI persistente dello Storage Access Framework.
 
-### Dati di esempio
-Al primo avvio l'app carica i dati del prototipo, con le date spostate sul mese corrente. Si cancellano da *Altro › Backup e dati › Cancella tutti i dati*: restano categorie, budget e preferenze. Per partire vuoti, compila con `VITE_DEMO_SEED=0 npm run build`.
+### Dati iniziali
+L'app parte vuota: ci sono solo le categorie con i limiti del design (modificabili toccando il nome in Budget) e le preferenze delle notifiche. Conti, pagamenti programmati e obiettivi si aggiungono dalle rispettive schermate.
+Un'installazione che conteneva i dati di esempio del prototipo viene ripulita al primo avvio della nuova versione. Per sviluppare con i dati del prototipo: `VITE_DEMO_SEED=1 npm run dev`.
+
+### Aggiornare l'app sul telefono
+Ogni push su GitHub produce un nuovo APK (Actions › run › Artifacts). Si installa **sopra** quello vecchio, senza disinstallare: i dati restano.
+Funziona perché tutte le build sono firmate con la stessa chiave di debug (`android/app/patrimonio-debug.keystore`, password `android`) e il `versionCode` cresce a ogni run.
+Attenzione: disinstallare l'app cancella i dati. Fai un backup prima, se mai ti servisse.
 
 ## Note e limiti noti
 - Il formato delle notifiche di Google Wallet cambia tra versioni e lingue. Il parser copre i formati più comuni ed è testato in `src/tests/core.test.ts`, ma va verificato con le tue notifiche reali.
