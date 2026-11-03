@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>*{box-sizing:border-box} body{margin:0} a{color:#5fbf8a} a:hover{color:#4fae7a} input::placeholder{color:#8a948f}</style>
+</helmet>
+<div style="position:relative; width:100%; height:100%; display:flex; background:#0e1110; color:#e6ebe8; font-family:'IBM Plex Sans',sans-serif; font-size:14px; overflow:hidden">
+  <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+    <div style="width:228px; flex-shrink:0; border-right:1px solid #262c2a; display:flex; flex-direction:column; background:#0e1110">
+      <div style="padding:22px 20px; border-bottom:1px solid #262c2a; display:flex; flex-direction:column; gap:4px">
+        <div style="font-family:'JetBrains Mono',monospace; font-weight:600; font-size:16px; letter-spacing:0.02em">patrimonio<span style="color:#5fbf8a">.</span></div>
+        <div style="font-size:12px; color:#8a948f">Marco Bellini</div>
+      </div>
+      <div style="display:flex; flex-direction:column; padding:10px 0; flex:1">
+        <sc-for list="{{ nav }}" as="n" hint-placeholder-count="8">
+          <button onClick="{{ n.onClick }}" style="display:flex; align-items:stretch; gap:14px; background:{{ n.bg }}; color:{{ n.color }}; border:none; padding:0; font-family:inherit; font-size:14px; text-align:left; cursor:pointer; height:40px" style-hover="background:#1b201e">
+            <span style="width:3px; background:{{ n.mark }}"></span>
+            <span style="display:flex; align-items:center">{{ n.label }}</span>
+          </button>
+        </sc-for>
+      </div>
+      <div style="padding:16px 20px; border-top:1px solid #262c2a; display:flex; flex-direction:column; gap:6px; font-size:12px; color:#8a948f">
+        <div style="display:flex; align-items:center; gap:8px"><span style="width:7px; height:7px; background:#5fbf8a"></span>Google Pay sincronizzato</div>
+        <div style="display:flex; align-items:center; gap:8px"><span style="width:7px; height:7px; background:#5fbf8a"></span>Prezzi di mercato aggiornati</div>
+        <button onClick="{{ startOnb }}" style="background:none; border:none; color:#8a948f; font-family:inherit; font-size:12px; cursor:pointer; padding:6px 0 0; text-align:left" style-hover="color:#e6ebe8">Rivedi introduzione →</button>
+      </div>
+    </div>
+  </sc-if>
+  <div style="flex:1; min-width:0; display:flex; flex-direction:column">
+    <div style="padding:20px 24px 16px; border-bottom:1px solid #262c2a; display:flex; justify-content:space-between; align-items:flex-end; gap:16px">
+      <div style="display:flex; flex-direction:column; gap:4px; min-width:0">
+        <div style="font-size:24px; font-weight:600; letter-spacing:-0.01em">{{ title }}</div>
+        <div style="font-size:13px; color:#8a948f; text-wrap:pretty">{{ subtitle }}</div>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center; flex-shrink:0">
+      <button onClick="{{ openN }}" style="position:relative; width:40px; height:40px; background:transparent; border:1px solid #262c2a; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0" style-hover="background:#1b201e">
+        <span style="width:18px; height:18px; background:#e6ebe8; mask-image:url(https://unpkg.com/lucide-static@0.460.0/icons/bell.svg); mask-size:contain; mask-repeat:no-repeat; mask-position:center"></span>
+        <sc-if value="{{ hasUnread }}" hint-placeholder-val="{{ true }}"><span style="position:absolute; top:-7px; right:-7px; min-width:18px; height:18px; padding:0 4px; background:#5fbf8a; color:#0b1410; font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; display:flex; align-items:center; justify-content:center">{{ unread }}</span></sc-if>
+      </button>
+      <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+        <button onClick="{{ headClick }}" style="background:#5fbf8a; color:#0b1410; border:none; padding:10px 16px; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; text-align:left; white-space:nowrap" style-hover="background:#4fae7a">{{ headLabel }}</button>
+      </sc-if>
+      </div>
+    </div>
+    <div style="flex:1; overflow:auto; padding:20px">
+
+      <sc-if value="{{ sHome }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex; flex-direction:column; gap:16px">
+          <div style="background:#151918; border:1px solid #262c2a; padding:20px; display:flex; flex-direction:column; gap:14px; min-width:0">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap">
+              <div style="display:flex; flex-direction:column; gap:6px">
+                <div style="font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#8a948f">Patrimonio netto</div>
+                <div style="font-family:'JetBrains Mono',monospace; font-variant-numeric:tabular-nums; font-size:40px; font-weight:500; letter-spacing:-0.03em; line-height:1.1">{{ netStr }}</div>
+                <div style="font-family:'JetBrains Mono',monospace; font-size:13px; color:{{ rangeColor }}">{{ rangeChange }} <span style="color:#8a948f; font-family:'IBM Plex Sans',sans-serif">{{ rangeLabel }}</span></div>
+              </div>
+              <div style="display:flex; border:1px solid #262c2a">
+                <sc-for list="{{ ranges }}" as="r" hint-placeholder-count="3">
+                  <button onClick="{{ r.onClick }}" style="background:{{ r.bg }}; color:{{ r.color }}; border:none; padding:7px 12px; font-family:'JetBrains Mono',monospace; font-size:12px; cursor:pointer">{{ r.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+            {{ chart }}
+            <div style="display:flex; justify-content:space-between; font-family:'JetBrains Mono',monospace; font-size:11px; color:#8a948f"><span>{{ chartStart }}</span><span>{{ chartEnd }}</span></div>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px">
+            <div style="background:#151918; border:1px solid #262c2a; padding:20px; display:flex; flex-direction:column; gap:14px; min-width:0">
+              <div style="font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#8a948f">Allocazione</div>
+              <div style="display:flex; height:10px; gap:2px">
+                <sc-for list="{{ alloc }}" as="a" hint-placeholder-count="2"><div style="width:{{ a.w }}; background:{{ a.c }}"></div></sc-for>
+              </div>
+              <sc-for list="{{ alloc }}" as="a" hint-placeholder-count="2">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px">
+                  <div style="display:flex; align-items:center; gap:8px"><span style="width:8px; height:8px; background:{{ a.c }}"></span>{{ a.n }}</div>
+                  <div style="display:flex; gap:12px; font-family:'JetBrains Mono',monospace; font-size:13px"><span style="color:#8a948f">{{ a.pct }}</span><span>{{ a.val }}</span></div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="background:#151918; border:1px solid #262c2a; padding:20px; display:flex; flex-direction:column; gap:14px; min-width:0">
+              <div style="font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#8a948f">Novembre finora</div>
+              <div style="display:flex; justify-content:space-between"><span style="color:#8a948f">Entrate</span><span style="font-family:'JetBrains Mono',monospace; color:#5fbf8a">{{ novIn }}</span></div>
+              <div style="display:flex; justify-content:space-between"><span style="color:#8a948f">Spese</span><span style="font-family:'JetBrains Mono',monospace">{{ novOut }}</span></div>
+              <div style="display:flex; justify-content:space-between"><span style="color:#8a948f">Investito</span><span style="font-family:'JetBrains Mono',monospace">{{ novInv }}</span></div>
+              <div style="border-top:1px solid #1d2321; padding-top:12px; font-size:13px; color:#8a948f; text-wrap:pretty">{{ novNote }}</div>
+            </div>
+            <div style="background:#151918; border:1px solid #262c2a; padding:20px; display:flex; flex-direction:column; gap:10px; min-width:0">
+              <div style="display:flex; justify-content:space-between; align-items:center">
+                <div style="font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#8a948f">Prossimi pagamenti</div>
+                <button onClick="{{ goCal }}" style="background:none; border:none; color:#5fbf8a; font-family:inherit; font-size:12px; cursor:pointer; padding:0">Calendario →</button>
+              </div>
+              <sc-for list="{{ nextPays }}" as="p" hint-placeholder-count="4">
+                <div style="display:grid; grid-template-columns:48px 28px minmax(0,1fr) auto; gap:10px; align-items:center; padding:6px 0; border-bottom:1px solid #1d2321">
+                  <span style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#8a948f">{{ p.when }}</span>
+                  <span style="width:28px; height:28px; background:rgba(95,191,138,0.12); display:flex; align-items:center; justify-content:center"><span style="width:14px; height:14px; background:#5fbf8a; mask-image:{{ p.icon }}; mask-size:contain; mask-repeat:no-repeat; mask-position:center"></span></span>
+                  <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ p.n }}</span>
+                  <span style="font-family:'JetBrains Mono',monospace; font-size:13px">{{ p.amt }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="background:#151918; border:1px solid #262c2a; padding:20px; display:flex; flex-direction:column; gap:4px; min-width:0">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:6px">
+              <div style="font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#8a948f">Ultimi movimenti</div>
+              <button onClick="{{ goTx }}" style="background:none; border:none; color:#5fbf8a; font-family:inherit; font-size:12px; cursor:pointer; padding:0">Vedi tutti →</button>
+            </div>
+            <sc-for list="{{ recentTx }}" as="t" hint-placeholder-count="5">
+              <div style="display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:center; padding:11px 0; border-bottom:1px solid #1d2321">
+                <div style="display:flex; flex-direction:column; gap:3px; min-width:0">
+                  <div style="display:flex; gap:8px; align-items:center; min-width:0"><span style="font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ t.m }}</span><sc-if value="{{ t.isAuto }}"><span style="font-size:10px; font-weight:600; letter-spacing:0.04em; padding:2px 6px; background:rgba(95,191,138,0.12); color:#5fbf8a; white-space:nowrap">G PAY · AUTO</span></sc-if></div>
+                  <div style="font-size:12px; color:#8a948f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ t.meta }}</div>
+                </div>
+                <div style="font-family:'JetBrains Mono',monospace; font-size:14px; color:{{ t.color }}; white-space:nowrap">{{ t.amtStr }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ sTx }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; flex-direction:column; gap:16px">
+          <div style="border:1px solid #262c2a; background:rgba(95,191,138,0.12); padding:14px 16px; display:flex; gap:12px; align-items:flex-start">
+            <span style="width:8px; height:8px; background:#5fbf8a; margin-top:6px; flex-shrink:0"></span>
+            <div style="display:flex; flex-direction:column; gap:2px">
+              <div style="font-weight:600">Google Pay è collegato</div>
+              <div style="font-size:13px; color:#8a948f; text-wrap:pretty">Quando paghi con la carta ···4821 la spesa compare qui con categoria già assegnata. {{ autoCount }} movimenti registrati in automatico questo mese.</div>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap">
+            <div style="display:flex; border:1px solid #262c2a">
+              <sc-for list="{{ txFilters }}" as="f" hint-placeholder-count="3">
+                <button onClick="{{ f.onClick }}" style="background:{{ f.bg }}; color:{{ f.color }}; border:none; padding:7px 14px; font-family:inherit; font-size:13px; cursor:pointer">{{ f.label }}</button>
+              </sc-for>
+            </div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#8a948f">{{ txCount }}</div>
+          </div>
+          <div style="background:#151918; border:1px solid #262c2a; padding:4px 20px; display:flex; flex-direction:column; min-width:0">
+            <sc-for list="{{ txList }}" as="t" hint-placeholder-count="8">
+              <div style="display:grid; grid-template-columns:52px minmax(0,1fr) auto; gap:12px; align-items:center; padding:12px 0; border-bottom:1px solid #1d2321">
+                <span style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#8a948f">{{ t.d }}</span>
+                <div style="display:flex; flex-direction:column; gap:3px; min-width:0">
+                  <div style="display:flex; gap:8px; align-items:center; min-width:0"><span style="font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ t.m }}</span><sc-if value="{{ t.isAuto }}"><span style="font-size:10px; font-weight:600; letter-spacing:0.04em; padding:2px 6px; background:rgba(95,191,138,0.12); color:#5fbf8a; white-space:nowrap">G PAY · AUTO</span></sc-if></div>
+                  <div style="font-size:12px; color:#8a948f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ t.meta }}</div>
+                </div>
+                <div style="font-family:'JetBrains Mono',monospace; font-size:14px; color:{{ t.color }}; white-space:nowrap">{{ t.amtStr }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ sBudget }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; flex-direction:column; gap:16px">
+          <div style="background:#151918; border:1px solid #262c2a; padding:20px; display:flex; flex-direction:column; gap:14px">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap">
+              <div style="font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#8a948f">Totale del mese</div>
+              <div style="display:flex; border:1px solid #262c2a">
+                <sc-for list="{{ bMonths }}" as="b" hint-placeholder-count="2">
+                  <button onClick="{{ b.onClick }}" style="background:{{ b.bg }}; color:{{ b.color }}; border:none; padding:7px 14px; font-family:inherit; font-size:13px; cursor:pointer">{{ b.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap">
+              <span style="font-family:'JetBrains Mono',monospace; font-size:32px; font-weight:500; letter-spacing:-0.02em">{{ bSpent }}</span>
+              <span style="font-family:'JetBrains Mono',monospace; color:#8a948f">di {{ bTotal }}</span>
+            </div>
+            <div style="height:8px; background:#1d2321"><div style="height:100%; width:{{ bW }}; background:#5fbf8a"></div></div>
+            <div style="font-size:13px; color:#8a948f">{{ bNote }}</div>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px">
+            <sc-for list="{{ budgets }}" as="b" hint-placeholder-count="6">
+              <div style="background:#151918; border:1px solid #262c2a; padding:18px 20px; display:flex; flex-direction:column; gap:10px; min-width:0">
+                <div style="display:flex; justify-content:space-between; align-items:baseline"><span style="font-weight:600">{{ b.n }}</span><span style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#8a948f">{{ b.pctStr }}</span></div>
+                <div style="height:6px; background:#1d2321"><div style="height:100%; width:{{ b.w }}; background:{{ b.bar }}"></div></div>
+                <div style="display:flex; justify-content:space-between; gap:8px; font-size:13px"><span style="font-family:'JetBrains Mono',monospace">{{ b.spent }} <span style="color:#8a948f">/ {{ b.budget }}</span></span><span style="color:{{ b.noteColor }}; white-space:nowrap">{{ b.note }}</span></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ sConti }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; flex-direction:column; gap:16px">
+          <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px">
+            <div style="background:#151918; border:1px solid #262c2a; padding:20px; display:flex; flex-direction:column; gap:8px">
+              <div style="font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#8a948f">Liquidità totale</div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:32px; font-weight:500; letter-spacing:-0.02em">{{ liqStr }}</div>
+              <div style="font-size:13px; color:#8a948f">{{ accCount }} conti, carte e portafogli</div>
+            </div>
+            <div style="background:#151918; border:1px solid #262c2a; padding:20px; display:flex; flex-direction:column; gap:10px">
+              <div style="display:flex; justify-content:space-between; align-items:center">
+                <div style="font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#8a948f">Google Pay</div>
+                <span style="font-size:10px; font-weight:600; letter-spacing:0.04em; padding:2px 6px; background:rgba(95,191,138,0.12); color:#5fbf8a">ATTIVO</span>
+              </div>
+              <div style="font-weight:600">Carta di credito ···4821</div>
+              <div style="font-size:13px; color:#8a948f; text-wrap:pretty">Ogni pagamento viene registrato e categorizzato da solo. Ultima sincronizzazione oggi alle 09:14.</div>
+            </div>
+          </div>
+          <div style="background:#151918; border:1px solid #262c2a; padding:4px 20px; display:flex; flex-direction:column">
+            <sc-for list="{{ accounts }}" as="a" hint-placeholder-count="5">
+              <div style="display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:center; padding:14px 0; border-bottom:1px solid #1d2321">
+                <div style="display:flex; flex-direction:column; gap:3px; min-width:0">
+                  <span style="font-weight:500">{{ a.n }}</span>
+                  <span style="font-size:12px; color:#8a948f">{{ a.sub }}</span>
+                </div>
+                <span style="font-family:'JetBrains Mono',monospace; font-size:15px; color:{{ a.color }}">{{ a.balStr }}</span>
+              </div>
+            </sc-for>
+            <div style="padding:14px 0">
+              <button style="background:transparent; color:#e6ebe8; border:1px solid #262c2a; padding:9px 14px; font-family:inherit; font-size:13px; cursor:pointer; text-align:left; white-space:nowrap" style-hover="background:#1b201e">+ Aggiungi conto o carta</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ sInv }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; flex-direction:column; gap:16px">
+          <div style="background:#151918; border:1px solid #262c2a; padding:20px; display:flex; flex-direction:column; gap:14px">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap">
+              <div style="font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#8a948f">ETF · Conto titoli</div>
+              <div style="display:flex; align-items:center; gap:8px; font-family:'JetBrains Mono',monospace; font-size:12px; color:#8a948f">{{ liveDot }}<span>PREZZI · {{ time }}</span></div>
+            </div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:40px; font-weight:500; letter-spacing:-0.03em; line-height:1.1">{{ invStr }}</div>
+            <div style="display:flex; gap:24px; flex-wrap:wrap; font-size:13px">
+              <div style="display:flex; flex-direction:column; gap:2px"><span style="color:#8a948f">Guadagno totale</span><span style="font-family:'JetBrains Mono',monospace; color:{{ invPlColor }}">{{ invPl }}</span></div>
+              <div style="display:flex; flex-direction:column; gap:2px"><span style="color:#8a948f">Oggi</span><span style="font-family:'JetBrains Mono',monospace; color:{{ invDayColor }}">{{ invDay }}</span></div>
+              <div style="display:flex; flex-direction:column; gap:2px"><span style="color:#8a948f">Capitale investito</span><span style="font-family:'JetBrains Mono',monospace">{{ invCost }}</span></div>
+            </div>
+            <div style="display:flex; height:10px; gap:2px">
+              <sc-for list="{{ holdings }}" as="h" hint-placeholder-count="4"><div style="width:{{ h.wStr }}; background:{{ h.c }}"></div></sc-for>
+            </div>
+            <div style="font-size:12px; color:#8a948f">Quantità registrate da te · prezzi da quotazioni pubbliche per ISIN</div>
+          </div>
+          <div style="background:#151918; border:1px solid #262c2a; padding:4px 20px; display:flex; flex-direction:column; min-width:0">
+            <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+              <div style="display:grid; grid-template-columns:minmax(0,2.4fr) 1fr 1fr 1fr 1.2fr 1.2fr; gap:12px; padding:12px 0; border-bottom:1px solid #262c2a; font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#8a948f">
+                <span>Titolo</span><span style="text-align:right">Quote</span><span style="text-align:right">Prezzo</span><span style="text-align:right">Oggi</span><span style="text-align:right">Valore</span><span style="text-align:right">P/L</span>
+              </div>
+              <sc-for list="{{ holdings }}" as="h" hint-placeholder-count="4">
+                <div style="display:grid; grid-template-columns:minmax(0,2.4fr) 1fr 1fr 1fr 1.2fr 1.2fr; gap:12px; padding:14px 0; border-bottom:1px solid #1d2321; align-items:center; font-family:'JetBrains Mono',monospace; font-size:13px">
+                  <div style="display:flex; align-items:center; gap:10px; min-width:0; font-family:'IBM Plex Sans',sans-serif"><span style="width:8px; height:8px; background:{{ h.c }}; flex-shrink:0"></span><div style="display:flex; flex-direction:column; gap:2px; min-width:0"><span style="font-family:'JetBrains Mono',monospace; font-weight:600">{{ h.t }}</span><span style="font-size:12px; color:#8a948f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ h.n }} · {{ h.isin }}</span></div></div>
+                  <span style="text-align:right">{{ h.q }}</span>
+                  <span style="text-align:right">{{ h.priceStr }}</span>
+                  <span style="text-align:right; color:{{ h.dayColor }}">{{ h.dayStr }}</span>
+                  <span style="text-align:right">{{ h.valStr }}</span>
+                  <span style="text-align:right; color:{{ h.plColor }}">{{ h.plPctStr }}</span>
+                </div>
+              </sc-for>
+            </sc-if>
+            <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
+              <sc-for list="{{ holdings }}" as="h" hint-placeholder-count="4">
+                <div style="display:grid; grid-template-columns:minmax(0,1fr) auto; gap:6px 12px; padding:14px 0; border-bottom:1px solid #1d2321">
+                  <div style="display:flex; align-items:center; gap:8px; min-width:0"><span style="width:8px; height:8px; background:{{ h.c }}; flex-shrink:0"></span><span style="font-family:'JetBrains Mono',monospace; font-weight:600">{{ h.t }}</span><span style="font-size:12px; color:#8a948f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ h.n }}</span></div>
+                  <span style="font-family:'JetBrains Mono',monospace; text-align:right">{{ h.valStr }}</span>
+                  <span style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#8a948f">{{ h.q }} × {{ h.priceStr }}</span>
+                  <span style="font-family:'JetBrains Mono',monospace; font-size:12px; text-align:right; color:{{ h.dayColor }}">{{ h.dayStr }} oggi</span>
+                </div>
+              </sc-for>
+            </sc-if>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px">
+            <div style="background:#151918; border:1px solid #262c2a; padding:20px; display:flex; flex-direction:column; gap:12px; min-width:0">
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:12px">
+                <div style="font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#8a948f">Previdenza · Fondo Cometa</div>
+                <span style="font-size:10px; font-weight:600; letter-spacing:0.04em; padding:2px 6px; border:1px solid #262c2a; color:#8a948f; white-space:nowrap">QUOTA MENSILE</span>
+              </div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:28px; font-weight:500; letter-spacing:-0.02em">{{ cometaVal }}</div>
+              <div style="display:flex; gap:24px; flex-wrap:wrap; font-size:13px">
+                <div style="display:flex; flex-direction:column; gap:2px"><span style="color:#8a948f">Rendimento</span><span style="font-family:'JetBrains Mono',monospace; color:{{ cometaPlColor }}">{{ cometaPl }}</span></div>
+                <div style="display:flex; flex-direction:column; gap:2px"><span style="color:#8a948f">Posizione</span><span style="font-family:'JetBrains Mono',monospace">{{ cometaQuote }}</span></div>
+              </div>
+              <div style="border-top:1px solid #1d2321; padding-top:12px; display:flex; flex-direction:column; gap:4px; font-size:13px; color:#8a948f">
+                <span>Comparto Reddito · versi €125 al mese più TFR e quota azienda</span>
+                <span style="font-size:12px">Quote registrate da te · valore quota dal sito del fondo (30 set 2026)</span>
+              </div>
+            </div>
+            <div style="background:#151918; border:1px solid #262c2a; padding:20px; display:flex; flex-direction:column; gap:12px; min-width:0">
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:12px">
+                <div style="font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#8a948f">Crypto</div>
+                <button onClick="{{ openWallet }}" style="background:none; border:none; color:#5fbf8a; font-family:inherit; font-size:12px; cursor:pointer; padding:0; white-space:nowrap">+ Aggiungi wallet</button>
+              </div>
+              <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap"><span style="font-family:'JetBrains Mono',monospace; font-size:28px; font-weight:500; letter-spacing:-0.02em">{{ crTotStr }}</span><span style="font-family:'JetBrains Mono',monospace; font-size:13px; color:{{ crPlColor }}">{{ crPl }}</span></div>
+              <div style="display:flex; flex-direction:column">
+                <sc-for list="{{ crypto }}" as="c" hint-placeholder-count="2">
+                  <div style="display:grid; grid-template-columns:minmax(0,1fr) auto; gap:4px 12px; padding:10px 0; border-top:1px solid #1d2321">
+                    <div style="display:flex; align-items:baseline; gap:8px"><span style="font-family:'JetBrains Mono',monospace; font-weight:600">{{ c.t }}</span><span style="font-size:12px; color:#8a948f">{{ c.n }}</span></div>
+                    <span style="font-family:'JetBrains Mono',monospace; text-align:right">{{ c.valStr }}</span>
+                    <span style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#8a948f">{{ c.qs }} × {{ c.priceStr }}</span>
+                    <span style="font-family:'JetBrains Mono',monospace; font-size:12px; text-align:right; color:{{ c.dayColor }}">{{ c.dayStr }} 24h</span>
+                    <span style="grid-column:1 / -1; font-size:11px; color:#8a948f">{{ c.src }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+          <div style="border:1px dashed #262c2a; padding:18px 20px; display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap">
+            <div style="display:flex; flex-direction:column; gap:3px; max-width:480px">
+              <span style="font-weight:600">Aggiorna il portafoglio</span>
+              <span style="font-size:13px; color:#8a948f; text-wrap:pretty">Nessun collegamento diretto ai broker: registri tu acquisti e vendite, oppure importi il CSV esportato dal broker. Per le crypto basta l'indirizzo pubblico del wallet.</span>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:8px">
+              <button onClick="{{ openOp }}" style="background:#5fbf8a; color:#0b1410; border:none; padding:9px 14px; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; text-align:left; white-space:nowrap" style-hover="background:#4fae7a">+ Nuova operazione</button>
+              <button style="background:transparent; color:#e6ebe8; border:1px solid #262c2a; padding:9px 14px; font-family:inherit; font-size:13px; cursor:pointer; text-align:left; white-space:nowrap" style-hover="background:#1b201e">Importa CSV</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ sGoals }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px">
+          <sc-for list="{{ goals }}" as="g" hint-placeholder-count="3">
+            <div style="background:#151918; border:1px solid #262c2a; padding:20px; display:flex; flex-direction:column; gap:14px; min-width:0">
+              <div style="display:flex; justify-content:space-between; align-items:baseline; gap:8px"><span style="font-weight:600; font-size:16px">{{ g.n }}</span><span style="font-family:'JetBrains Mono',monospace; color:#5fbf8a">{{ g.pctStr }}</span></div>
+              <div style="display:flex; align-items:baseline; gap:8px; flex-wrap:wrap"><span style="font-family:'JetBrains Mono',monospace; font-size:26px; font-weight:500; letter-spacing:-0.02em">{{ g.saved }}</span><span style="font-family:'JetBrains Mono',monospace; color:#8a948f">di {{ g.target }}</span></div>
+              <div style="height:8px; background:#1d2321"><div style="height:100%; width:{{ g.w }}; background:#5fbf8a"></div></div>
+              <div style="display:flex; flex-direction:column; gap:2px; font-size:13px; color:#8a948f"><span>{{ g.monthly }}</span><span>{{ g.eta }}</span></div>
+              <button onClick="{{ g.add }}" style="background:transparent; color:#e6ebe8; border:1px solid #262c2a; padding:9px 14px; font-family:inherit; font-size:13px; cursor:pointer; text-align:left; white-space:nowrap" style-hover="background:#1b201e">+ Versa €100</button>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ sCal }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; align-items:start">
+          <div style="background:#151918; border:1px solid #262c2a; padding:20px; display:flex; flex-direction:column; gap:14px; min-width:0">
+            <div style="display:flex; justify-content:space-between; align-items:baseline"><span style="font-weight:600; font-size:16px">Novembre 2026</span><span style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#8a948f">{{ calTotal }}</span></div>
+            <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:4px; font-size:11px; color:#8a948f; text-align:center; font-weight:600; letter-spacing:0.06em">
+              <span>LUN</span><span>MAR</span><span>MER</span><span>GIO</span><span>VEN</span><span>SAB</span><span>DOM</span>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:4px">
+              <sc-for list="{{ cells }}" as="c" hint-placeholder-count="35">
+                <button onClick="{{ c.onClick }}" style="aspect-ratio:1; background:{{ c.bg }}; color:{{ c.color }}; border:{{ c.border }}; font-family:'JetBrains Mono',monospace; font-size:13px; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; padding:0">
+                  <span>{{ c.label }}</span><span style="width:12px; height:12px; background:{{ c.dot }}; mask-image:{{ c.mask }}; mask-size:contain; mask-repeat:no-repeat; mask-position:center"></span>
+                </button>
+              </sc-for>
+            </div>
+            <div style="border-top:1px solid #1d2321; padding-top:12px; display:flex; flex-direction:column; gap:8px">
+              <div style="font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#8a948f">{{ dayTitle }}</div>
+              <sc-for list="{{ dayPays }}" as="p" hint-placeholder-count="1">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px"><span style="display:flex; align-items:center; gap:10px"><span style="width:28px; height:28px; background:rgba(95,191,138,0.12); display:flex; align-items:center; justify-content:center; flex-shrink:0"><span style="width:15px; height:15px; background:#5fbf8a; mask-image:{{ p.icon }}; mask-size:contain; mask-repeat:no-repeat; mask-position:center"></span></span><span>{{ p.n }} <span style="color:#8a948f; font-size:12px">· {{ p.k }}</span></span></span><span style="font-family:'JetBrains Mono',monospace">{{ p.amt }}</span></div>
+              </sc-for>
+              <sc-if value="{{ dayEmpty }}" hint-placeholder-val="{{ false }}"><div style="font-size:13px; color:#8a948f">Nessun pagamento previsto. Giornata tranquilla.</div></sc-if>
+            </div>
+          </div>
+          <div style="background:#151918; border:1px solid #262c2a; padding:4px 20px; display:flex; flex-direction:column; min-width:0">
+            <div style="padding:14px 0 10px; font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#8a948f">In arrivo</div>
+            <sc-for list="{{ upcoming }}" as="p" hint-placeholder-count="8">
+              <div style="display:grid; grid-template-columns:56px 32px minmax(0,1fr) auto; gap:12px; align-items:center; padding:11px 0; border-bottom:1px solid #1d2321">
+                <div style="display:flex; flex-direction:column; gap:2px"><span style="font-family:'JetBrains Mono',monospace; font-size:13px">{{ p.when }}</span><span style="font-size:11px; color:#8a948f">{{ p.rel }}</span></div>
+                <span style="width:32px; height:32px; background:rgba(95,191,138,0.12); display:flex; align-items:center; justify-content:center"><span style="width:16px; height:16px; background:#5fbf8a; mask-image:{{ p.icon }}; mask-size:contain; mask-repeat:no-repeat; mask-position:center"></span></span>
+                <div style="display:flex; flex-direction:column; gap:2px; min-width:0"><span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ p.n }}</span><span style="font-size:12px; color:#8a948f">{{ p.k }}</span></div>
+                <span style="font-family:'JetBrains Mono',monospace">{{ p.amt }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ sReport }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; flex-direction:column; gap:16px">
+          <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px">
+            <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="3">
+              <div style="background:#151918; border:1px solid #262c2a; padding:18px 20px; display:flex; flex-direction:column; gap:6px">
+                <div style="font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#8a948f">{{ k.l }}</div>
+                <div style="font-family:'JetBrains Mono',monospace; font-size:26px; font-weight:500; letter-spacing:-0.02em">{{ k.v }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px">
+            <div style="background:#151918; border:1px solid #262c2a; padding:20px; display:flex; flex-direction:column; gap:14px; min-width:0">
+              <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap">
+                <div style="font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#8a948f">Entrate e uscite · 6 mesi</div>
+                <div style="display:flex; gap:12px; font-size:12px; color:#8a948f"><span style="display:flex; align-items:center; gap:6px"><span style="width:8px; height:8px; background:#5fbf8a"></span>Entrate</span><span style="display:flex; align-items:center; gap:6px"><span style="width:8px; height:8px; background:#8a948f"></span>Uscite</span></div>
+              </div>
+              <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:10px; height:170px; align-items:end; border-bottom:1px solid #262c2a">
+                <sc-for list="{{ flow }}" as="f" hint-placeholder-count="6">
+                  <div style="display:flex; gap:3px; align-items:flex-end; height:100%"><div style="flex:1; height:{{ f.hi }}; background:#5fbf8a"></div><div style="flex:1; height:{{ f.ho }}; background:#8a948f"></div></div>
+                </sc-for>
+              </div>
+              <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:10px; font-family:'JetBrains Mono',monospace; font-size:11px; color:#8a948f; text-align:center">
+                <sc-for list="{{ flow }}" as="f" hint-placeholder-count="6"><span>{{ f.m }}</span></sc-for>
+              </div>
+            </div>
+            <div style="background:#151918; border:1px solid #262c2a; padding:20px; display:flex; flex-direction:column; gap:12px; min-width:0">
+              <div style="font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#8a948f">Spese per categoria · ottobre</div>
+              <sc-for list="{{ catBars }}" as="c" hint-placeholder-count="7">
+                <div style="display:grid; grid-template-columns:96px minmax(0,1fr) 84px; gap:10px; align-items:center; font-size:13px">
+                  <span>{{ c.n }}</span>
+                  <div style="height:8px; background:#1d2321"><div style="height:100%; width:{{ c.w }}; background:#5fbf8a"></div></div>
+                  <span style="font-family:'JetBrains Mono',monospace; text-align:right">{{ c.v }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ sAltro }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#151918; border:1px solid #262c2a; padding:0 20px; display:flex; flex-direction:column">
+          <sc-for list="{{ altro }}" as="a" hint-placeholder-count="5">
+            <button onClick="{{ a.onClick }}" style="display:flex; justify-content:space-between; align-items:center; gap:12px; background:none; border:none; border-bottom:1px solid #1d2321; color:#e6ebe8; padding:16px 0; font-family:inherit; text-align:left; cursor:pointer">
+              <span style="display:flex; flex-direction:column; gap:3px"><span style="font-size:15px; font-weight:500">{{ a.label }}</span><span style="font-size:12px; color:#8a948f">{{ a.desc }}</span></span>
+              <span style="color:#8a948f">→</span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+
+    </div>
+    <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
+      <div style="display:grid; grid-template-columns:repeat(5,1fr); border-top:1px solid #262c2a; background:#0e1110; height:68px; flex-shrink:0">
+        <sc-for list="{{ tabsL }}" as="t" hint-placeholder-count="2">
+          <button onClick="{{ t.onClick }}" style="background:none; border:none; border-top:2px solid {{ t.mark }}; color:{{ t.color }}; font-family:inherit; font-size:11px; font-weight:500; cursor:pointer">{{ t.label }}</button>
+        </sc-for>
+        <div style="display:flex; align-items:center; justify-content:center">
+          <button onClick="{{ openSheet }}" style="width:48px; height:48px; background:#5fbf8a; color:#0b1410; border:none; font-size:24px; font-family:'JetBrains Mono',monospace; cursor:pointer" style-hover="background:#4fae7a">+</button>
+        </div>
+        <sc-for list="{{ tabsR }}" as="t" hint-placeholder-count="2">
+          <button onClick="{{ t.onClick }}" style="background:none; border:none; border-top:2px solid {{ t.mark }}; color:{{ t.color }}; font-family:inherit; font-size:11px; font-weight:500; cursor:pointer">{{ t.label }}</button>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ sheet }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute; inset:0; background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:{{ sheetAlign }}; z-index:10" onClick="{{ closeSheet }}">
+      <div onClick="{{ stop }}" style="width:{{ sheetW }}; background:#151918; border:1px solid #262c2a; padding:22px; display:flex; flex-direction:column; gap:18px; max-height:100%; overflow:auto">
+        <div style="display:flex; justify-content:space-between; align-items:center">
+          <span style="font-size:18px; font-weight:600">Nuova spesa</span>
+          <button onClick="{{ closeSheet }}" style="background:none; border:none; color:#8a948f; font-family:inherit; font-size:13px; cursor:pointer; padding:0">Annulla</button>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:6px">
+          <label style="font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#8a948f">Importo</label>
+          <div style="display:flex; align-items:center; gap:8px; border-bottom:1px solid {{ amtBorder }}; padding-bottom:6px">
+            <span style="font-family:'JetBrains Mono',monospace; font-size:32px; color:#8a948f">€</span>
+            <input value="{{ fAmt }}" onChange="{{ onAmt }}" placeholder="0,00" inputmode="decimal" style="flex:1; min-width:0; background:transparent; border:none; outline:none; color:#e6ebe8; font-family:'JetBrains Mono',monospace; font-size:32px; padding:0">
+          </div>
+          <sc-if value="{{ fErr }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px; color:#e5675a">Inserisci un importo maggiore di zero.</span></sc-if>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:6px">
+          <label style="font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#8a948f">Dove</label>
+          <input value="{{ fM }}" onChange="{{ onM }}" placeholder="es. Panificio Rossi" style="background:#0e1110; border:1px solid #262c2a; outline:none; color:#e6ebe8; font-family:inherit; font-size:14px; padding:10px 12px">
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px">
+          <label style="font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#8a948f">Categoria</label>
+          <div style="display:flex; flex-wrap:wrap; gap:6px">
+            <sc-for list="{{ catChips }}" as="c" hint-placeholder-count="7">
+              <button onClick="{{ c.onClick }}" style="background:{{ c.bg }}; color:{{ c.color }}; border:1px solid {{ c.border }}; padding:7px 11px; font-family:inherit; font-size:13px; cursor:pointer; white-space:nowrap; flex-shrink:0">{{ c.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px">
+          <label style="font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#8a948f">Pagato con</label>
+          <div style="display:flex; flex-wrap:wrap; gap:6px">
+            <sc-for list="{{ accChips }}" as="c" hint-placeholder-count="3">
+              <button onClick="{{ c.onClick }}" style="background:{{ c.bg }}; color:{{ c.color }}; border:1px solid {{ c.border }}; padding:7px 11px; font-family:inherit; font-size:13px; cursor:pointer; white-space:nowrap; flex-shrink:0">{{ c.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <button onClick="{{ save }}" style="background:#5fbf8a; color:#0b1410; border:none; padding:13px 16px; font-family:inherit; font-size:14px; font-weight:600; cursor:pointer; text-align:left" style-hover="background:#4fae7a">Salva spesa</button>
+      </div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ nOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeN }}" style="position:absolute; inset:0; z-index:15; background:{{ nBackdrop }}; display:flex; justify-content:flex-end; align-items:flex-start; padding:{{ nPad }}">
+      <div onClick="{{ stop }}" style="width:{{ nW }}; height:{{ nH }}; max-height:100%; background:#151918; border:1px solid #262c2a; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,0.5)">
+        <div style="padding:18px 20px 0; display:flex; flex-direction:column; gap:14px; border-bottom:1px solid #262c2a">
+          <div style="display:flex; justify-content:space-between; align-items:center">
+            <span style="font-size:18px; font-weight:600">Notifiche</span>
+            <button onClick="{{ closeN }}" style="background:none; border:none; color:#8a948f; font-family:inherit; font-size:13px; cursor:pointer; padding:0">Chiudi</button>
+          </div>
+          <div style="display:flex; gap:20px">
+            <sc-for list="{{ nTabs }}" as="t" hint-placeholder-count="2">
+              <button onClick="{{ t.onClick }}" style="background:none; border:none; border-bottom:2px solid {{ t.mark }}; color:{{ t.color }}; font-family:inherit; font-size:13px; font-weight:500; cursor:pointer; padding:0 0 10px">{{ t.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <sc-if value="{{ nRecent }}" hint-placeholder-val="{{ true }}">
+          <div style="flex:1; overflow:auto; display:flex; flex-direction:column">
+            <sc-for list="{{ notifs }}" as="n" hint-placeholder-count="5">
+              <div onClick="{{ n.onClick }}" style="display:grid; grid-template-columns:3px 32px minmax(0,1fr); gap:12px; padding:14px 20px 14px 0; border-bottom:1px solid #1d2321; cursor:pointer; background:{{ n.bg }}" style-hover="background:#1b201e">
+                <span style="background:{{ n.mark }}"></span>
+                <span style="width:32px; height:32px; background:rgba(95,191,138,0.12); display:flex; align-items:center; justify-content:center"><span style="width:16px; height:16px; background:#5fbf8a; mask-image:{{ n.icon }}; mask-size:contain; mask-repeat:no-repeat; mask-position:center"></span></span>
+                <div style="display:flex; flex-direction:column; gap:4px; min-width:0">
+                  <div style="display:flex; justify-content:space-between; gap:10px"><span style="font-weight:600; font-size:14px">{{ n.t }}</span><span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8a948f; white-space:nowrap">{{ n.time }}</span></div>
+                  <span style="font-size:13px; color:#8a948f; text-wrap:pretty">{{ n.b }}</span>
+                  <sc-if value="{{ n.hasAction }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex; gap:8px; padding-top:4px">
+                      <button onClick="{{ n.act }}" style="background:#5fbf8a; color:#0b1410; border:none; padding:7px 12px; font-family:inherit; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap" style-hover="background:#4fae7a">{{ n.actLabel }}</button>
+                      <button onClick="{{ n.later }}" style="background:transparent; color:#e6ebe8; border:1px solid #262c2a; padding:7px 12px; font-family:inherit; font-size:12px; cursor:pointer; white-space:nowrap" style-hover="background:#1b201e">Più tardi</button>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ n.done }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px; color:#5fbf8a">{{ n.doneLabel }}</span></sc-if>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="padding:12px 20px; border-top:1px solid #262c2a">
+            <button onClick="{{ readAll }}" style="background:none; border:none; color:#5fbf8a; font-family:inherit; font-size:13px; cursor:pointer; padding:0">Segna tutte come lette</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ nPrefsTab }}" hint-placeholder-val="{{ false }}">
+          <div style="flex:1; overflow:auto; padding:4px 20px">
+            <sc-for list="{{ prefs }}" as="p" hint-placeholder-count="6">
+              <div style="display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:center; padding:13px 0; border-bottom:1px solid #1d2321">
+                <div style="display:flex; flex-direction:column; gap:2px"><span style="font-weight:500">{{ p.l }}</span><span style="font-size:12px; color:#8a948f">{{ p.d }}</span></div>
+                <button onClick="{{ p.toggle }}" style="width:42px; height:24px; padding:3px; border:1px solid {{ p.border }}; background:{{ p.bg }}; display:flex; justify-content:{{ p.justify }}; cursor:pointer"><span style="width:16px; height:16px; background:{{ p.knob }}"></span></button>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showOnb }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute; inset:0; z-index:20; background:#0e1110; display:flex; flex-direction:column">
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:18px 24px; border-bottom:1px solid #262c2a; flex-shrink:0">
+        <div style="font-family:'JetBrains Mono',monospace; font-weight:600; font-size:16px">patrimonio<span style="color:#5fbf8a">.</span></div>
+        <button onClick="{{ skipOnb }}" style="background:none; border:none; color:#8a948f; font-family:inherit; font-size:13px; cursor:pointer; padding:0" style-hover="color:#e6ebe8">Salta</button>
+      </div>
+      <div style="flex:1; overflow:auto; display:flex; align-items:center; justify-content:center; padding:24px">
+        <div style="width:100%; max-width:1000px; display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:40px; align-items:center">
+          <div style="display:flex; flex-direction:column; gap:16px; min-width:0">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#5fbf8a; letter-spacing:0.06em">{{ onbNum }}</div>
+            <div style="font-size:34px; font-weight:600; line-height:1.15; letter-spacing:-0.02em; text-wrap:pretty">{{ onbTitle }}</div>
+            <div style="font-size:15px; line-height:1.55; color:#8a948f; text-wrap:pretty">{{ onbBody }}</div>
+            <div style="display:flex; flex-direction:column; gap:10px; padding-top:4px">
+              <sc-for list="{{ onbPoints }}" as="p" hint-placeholder-count="2">
+                <div style="display:flex; gap:10px; align-items:flex-start; font-size:14px"><span style="width:6px; height:6px; background:#5fbf8a; margin-top:7px; flex-shrink:0"></span><span>{{ p }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="min-width:0">
+            <sc-if value="{{ onb0 }}" hint-placeholder-val="{{ true }}">
+              <div style="background:#151918; border:1px solid #262c2a; padding:20px; display:flex; flex-direction:column; gap:12px">
+                <div style="font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#8a948f">Patrimonio netto</div>
+                <div style="font-family:'JetBrains Mono',monospace; font-size:34px; font-weight:500; letter-spacing:-0.03em">{{ netStr }}</div>
+                {{ chart }}
+                <div style="display:flex; height:8px; gap:2px"><sc-for list="{{ alloc }}" as="a" hint-placeholder-count="4"><div style="width:{{ a.w }}; background:{{ a.c }}"></div></sc-for></div>
+                <div style="display:flex; flex-wrap:wrap; gap:6px 16px; font-size:12px; color:#8a948f"><sc-for list="{{ alloc }}" as="a" hint-placeholder-count="4"><span style="display:flex; align-items:center; gap:6px"><span style="width:8px; height:8px; background:{{ a.c }}"></span>{{ a.n }}</span></sc-for></div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ onb1 }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; flex-direction:column; gap:12px">
+                <div style="background:#1b201e; border:1px solid #262c2a; padding:14px 16px; display:grid; grid-template-columns:32px minmax(0,1fr); gap:12px; box-shadow:0 16px 40px rgba(0,0,0,0.4)">
+                  <span style="width:32px; height:32px; background:#5fbf8a; display:flex; align-items:center; justify-content:center"><span style="width:16px; height:16px; background:#0b1410; mask-image:url(https://unpkg.com/lucide-static@0.460.0/icons/credit-card.svg); mask-size:contain; mask-repeat:no-repeat; mask-position:center"></span></span>
+                  <div style="display:flex; flex-direction:column; gap:3px"><div style="display:flex; justify-content:space-between"><span style="font-weight:600">Spesa registrata</span><span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8a948f">ora</span></div><span style="font-size:13px; color:#8a948f">Coop · −€46,85 · categoria Spesa</span></div>
+                </div>
+                <div style="background:#151918; border:1px solid #262c2a; padding:4px 20px">
+                  <sc-for list="{{ gpayDemo }}" as="t" hint-placeholder-count="3">
+                    <div style="display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:center; padding:11px 0; border-bottom:1px solid #1d2321">
+                      <div style="display:flex; flex-direction:column; gap:3px; min-width:0"><div style="display:flex; gap:8px; align-items:center"><span style="font-weight:500">{{ t.m }}</span><span style="font-size:10px; font-weight:600; letter-spacing:0.04em; padding:2px 6px; background:rgba(95,191,138,0.12); color:#5fbf8a; white-space:nowrap">G PAY · AUTO</span></div><span style="font-size:12px; color:#8a948f">{{ t.meta }}</span></div>
+                      <span style="font-family:'JetBrains Mono',monospace">{{ t.amtStr }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ onb2 }}" hint-placeholder-val="{{ false }}">
+              <div style="background:#151918; border:1px solid #262c2a; padding:4px 20px">
+                <sc-for list="{{ onbInv }}" as="r" hint-placeholder-count="3">
+                  <div style="display:grid; grid-template-columns:32px minmax(0,1fr) auto; gap:12px; align-items:center; padding:14px 0; border-bottom:1px solid #1d2321">
+                    <span style="width:32px; height:32px; background:rgba(95,191,138,0.12); display:flex; align-items:center; justify-content:center"><span style="width:16px; height:16px; background:#5fbf8a; mask-image:{{ r.icon }}; mask-size:contain; mask-repeat:no-repeat; mask-position:center"></span></span>
+                    <div style="display:flex; flex-direction:column; gap:3px; min-width:0"><span style="font-weight:600">{{ r.n }}</span><span style="font-size:12px; color:#8a948f">{{ r.how }}</span></div>
+                    <span style="font-family:'JetBrains Mono',monospace">{{ r.v }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ onb3 }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; flex-direction:column; gap:12px">
+                <sc-for list="{{ onbBudgets }}" as="b" hint-placeholder-count="3">
+                  <div style="background:#151918; border:1px solid #262c2a; padding:14px 18px; display:flex; flex-direction:column; gap:8px">
+                    <div style="display:flex; justify-content:space-between"><span style="font-weight:600">{{ b.n }}</span><span style="font-family:'JetBrains Mono',monospace; font-size:13px">{{ b.spent }} <span style="color:#8a948f">/ {{ b.budget }}</span></span></div>
+                    <div style="height:6px; background:#1d2321"><div style="height:100%; width:{{ b.w }}; background:{{ b.bar }}"></div></div>
+                  </div>
+                </sc-for>
+                <div style="background:#151918; border:1px solid #262c2a; padding:14px 18px; display:flex; flex-direction:column; gap:8px">
+                  <div style="display:flex; justify-content:space-between"><span style="font-weight:600">{{ onbGoal.n }}</span><span style="font-family:'JetBrains Mono',monospace; color:#5fbf8a">{{ onbGoal.pctStr }}</span></div>
+                  <div style="height:6px; background:#1d2321"><div style="height:100%; width:{{ onbGoal.w }}; background:#5fbf8a"></div></div>
+                  <span style="font-size:12px; color:#8a948f">{{ onbGoal.eta }}</span>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ onb4 }}" hint-placeholder-val="{{ false }}">
+              <div style="background:#151918; border:1px solid #262c2a; padding:4px 20px">
+                <sc-for list="{{ nextPays }}" as="p" hint-placeholder-count="4">
+                  <div style="display:grid; grid-template-columns:48px 32px minmax(0,1fr) auto; gap:12px; align-items:center; padding:12px 0; border-bottom:1px solid #1d2321">
+                    <span style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#8a948f">{{ p.when }}</span>
+                    <span style="width:32px; height:32px; background:rgba(95,191,138,0.12); display:flex; align-items:center; justify-content:center"><span style="width:16px; height:16px; background:#5fbf8a; mask-image:{{ p.icon }}; mask-size:contain; mask-repeat:no-repeat; mask-position:center"></span></span>
+                    <div style="display:flex; flex-direction:column; gap:2px; min-width:0"><span>{{ p.n }}</span><span style="font-size:12px; color:#8a948f">{{ p.k }}</span></div>
+                    <span style="font-family:'JetBrains Mono',monospace">{{ p.amt }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ onb5 }}" hint-placeholder-val="{{ false }}">
+              <div style="background:#151918; border:1px solid #262c2a; padding:4px 20px">
+                <sc-for list="{{ prefs }}" as="p" hint-placeholder-count="6">
+                  <div style="display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:center; padding:12px 0; border-bottom:1px solid #1d2321">
+                    <div style="display:flex; flex-direction:column; gap:2px"><span style="font-weight:500">{{ p.l }}</span><span style="font-size:12px; color:#8a948f">{{ p.d }}</span></div>
+                    <button onClick="{{ p.toggle }}" style="width:42px; height:24px; padding:3px; border:1px solid {{ p.border }}; background:{{ p.bg }}; display:flex; justify-content:{{ p.justify }}; cursor:pointer"><span style="width:16px; height:16px; background:{{ p.knob }}"></span></button>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:16px; padding:16px 24px; border-top:1px solid #262c2a; flex-shrink:0">
+        <div style="display:flex; gap:4px">
+          <sc-for list="{{ onbDots }}" as="d" hint-placeholder-count="6"><span style="width:22px; height:4px; background:{{ d.c }}"></span></sc-for>
+        </div>
+        <div style="display:flex; gap:8px">
+          <sc-if value="{{ onbCanBack }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ onbBack }}" style="background:transparent; color:#e6ebe8; border:1px solid #262c2a; padding:11px 16px; font-family:inherit; font-size:14px; cursor:pointer; white-space:nowrap" style-hover="background:#1b201e">Indietro</button>
+          </sc-if>
+          <button onClick="{{ onbNext }}" style="background:#5fbf8a; color:#0b1410; border:none; padding:11px 18px; font-family:inherit; font-size:14px; font-weight:600; cursor:pointer; text-align:left; white-space:nowrap" style-hover="background:#4fae7a">{{ onbNextLabel }}</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ op }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute; inset:0; background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:{{ sheetAlign }}; z-index:10" onClick="{{ closeOp }}">
+      <div onClick="{{ stop }}" style="width:{{ sheetW }}; background:#151918; border:1px solid #262c2a; padding:22px; display:flex; flex-direction:column; gap:18px; max-height:100%; overflow:auto">
+        <div style="display:flex; justify-content:space-between; align-items:center">
+          <div style="display:flex; border:1px solid #262c2a">
+            <sc-for list="{{ oModes }}" as="m" hint-placeholder-count="2">
+              <button onClick="{{ m.onClick }}" style="background:{{ m.bg }}; color:{{ m.color }}; border:none; padding:7px 14px; font-family:inherit; font-size:13px; cursor:pointer; white-space:nowrap">{{ m.label }}</button>
+            </sc-for>
+          </div>
+          <button onClick="{{ closeOp }}" style="background:none; border:none; color:#8a948f; font-family:inherit; font-size:13px; cursor:pointer; padding:0">Annulla</button>
+        </div>
+        <sc-if value="{{ isOpMode }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex; flex-direction:column; gap:16px">
+            <div style="display:flex; flex-wrap:wrap; gap:6px">
+              <sc-for list="{{ oTypes }}" as="c" hint-placeholder-count="2">
+                <button onClick="{{ c.onClick }}" style="background:{{ c.bg }}; color:{{ c.color }}; border:1px solid {{ c.border }}; padding:7px 11px; font-family:inherit; font-size:13px; cursor:pointer; white-space:nowrap">{{ c.label }}</button>
+              </sc-for>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:8px">
+              <label style="font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#8a948f">Strumento</label>
+              <div style="display:flex; flex-wrap:wrap; gap:6px">
+                <sc-for list="{{ oKinds }}" as="c" hint-placeholder-count="3">
+                  <button onClick="{{ c.onClick }}" style="background:{{ c.bg }}; color:{{ c.color }}; border:1px solid {{ c.border }}; padding:7px 11px; font-family:inherit; font-size:13px; cursor:pointer; white-space:nowrap">{{ c.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <sc-if value="{{ oNeedsT }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex; flex-direction:column; gap:6px">
+                <label style="font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#8a948f">Titolo</label>
+                <input value="{{ oT }}" onChange="{{ onOT }}" placeholder="{{ oTPh }}" style="background:#0e1110; border:1px solid #262c2a; outline:none; color:#e6ebe8; font-family:'JetBrains Mono',monospace; font-size:14px; padding:10px 12px">
+              </div>
+            </sc-if>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
+              <div style="display:flex; flex-direction:column; gap:6px; min-width:0">
+                <label style="font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#8a948f">Quantità</label>
+                <input value="{{ oQ }}" onChange="{{ onOQ }}" placeholder="0" inputmode="decimal" style="background:#0e1110; border:1px solid #262c2a; outline:none; color:#e6ebe8; font-family:'JetBrains Mono',monospace; font-size:14px; padding:10px 12px; min-width:0">
+              </div>
+              <div style="display:flex; flex-direction:column; gap:6px; min-width:0">
+                <label style="font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#8a948f">{{ oPriceLabel }}</label>
+                <input value="{{ oP }}" onChange="{{ onOP }}" placeholder="€ 0,00" inputmode="decimal" style="background:#0e1110; border:1px solid #262c2a; outline:none; color:#e6ebe8; font-family:'JetBrains Mono',monospace; font-size:14px; padding:10px 12px; min-width:0">
+              </div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:end">
+              <div style="display:flex; flex-direction:column; gap:6px; min-width:0">
+                <label style="font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#8a948f">Data</label>
+                <input type="date" value="{{ oDate }}" onChange="{{ onODate }}" style="background:#0e1110; border:1px solid #262c2a; outline:none; color:#e6ebe8; font-family:'JetBrains Mono',monospace; font-size:14px; padding:9px 12px; min-width:0; color-scheme:dark">
+              </div>
+              <button onClick="{{ togglePac }}" style="display:flex; align-items:center; gap:8px; background:{{ pacBg }}; color:{{ pacColor }}; border:1px solid {{ pacBorder }}; padding:10px 12px; font-family:inherit; font-size:13px; cursor:pointer; text-align:left; white-space:nowrap"><span style="width:14px; height:14px; border:1px solid {{ pacColor }}; display:flex; align-items:center; justify-content:center; font-size:10px">{{ pacMark }}</span>Ripeti ogni mese</button>
+            </div>
+            <div style="display:flex; justify-content:space-between; gap:12px; border-top:1px solid #1d2321; padding-top:12px; font-size:13px"><span style="color:#8a948f">Totale operazione</span><span style="font-family:'JetBrains Mono',monospace">{{ oTotal }}</span></div>
+            <sc-if value="{{ oErr }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px; color:#e5675a">Compila titolo, quantità e prezzo.</span></sc-if>
+            <div style="font-size:12px; color:#8a948f; text-wrap:pretty">Registri solo cosa hai comprato o venduto. Il valore attuale si calcola con le quotazioni di mercato.</div>
+            <button onClick="{{ saveOp }}" style="background:#5fbf8a; color:#0b1410; border:none; padding:13px 16px; font-family:inherit; font-size:14px; font-weight:600; cursor:pointer; text-align:left" style-hover="background:#4fae7a">Salva operazione</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isWalletMode }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex; flex-direction:column; gap:16px">
+            <div style="display:flex; flex-direction:column; gap:8px">
+              <label style="font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#8a948f">Rete</label>
+              <div style="display:flex; flex-wrap:wrap; gap:6px">
+                <sc-for list="{{ wNets }}" as="c" hint-placeholder-count="2">
+                  <button onClick="{{ c.onClick }}" style="background:{{ c.bg }}; color:{{ c.color }}; border:1px solid {{ c.border }}; padding:7px 11px; font-family:inherit; font-size:13px; cursor:pointer; white-space:nowrap">{{ c.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px">
+              <label style="font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#8a948f">Indirizzo pubblico o xpub</label>
+              <input value="{{ wAddr }}" onChange="{{ onWAddr }}" placeholder="bc1q… / xpub… / 0x…" style="background:#0e1110; border:1px solid #262c2a; outline:none; color:#e6ebe8; font-family:'JetBrains Mono',monospace; font-size:14px; padding:10px 12px">
+              <sc-if value="{{ oErr }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px; color:#e5675a">Incolla un indirizzo valido.</span></sc-if>
+            </div>
+            <div style="border:1px solid #262c2a; background:rgba(229,103,90,0.1); padding:12px 14px; font-size:13px; text-wrap:pretty">Serve solo l'indirizzo pubblico, in sola lettura. Non inserire mai la seed phrase o la chiave privata del tuo hardware wallet.</div>
+            <div style="font-size:12px; color:#8a948f; text-wrap:pretty">Il saldo viene letto dalla blockchain e si aggiorna da solo a ogni movimento del wallet.</div>
+            <button onClick="{{ saveWallet }}" style="background:#5fbf8a; color:#0b1410; border:none; padding:13px 16px; font-family:inherit; font-size:14px; font-weight:600; cursor:pointer; text-align:left" style-hover="background:#4fae7a">Aggiungi wallet</button>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:820},&quot;device&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;desktop&quot;,&quot;mobile&quot;],&quot;default&quot;:&quot;desktop&quot;,&quot;tsType&quot;:&quot;'desktop' | 'mobile'&quot;},&quot;onboarding&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;openNotifs&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  state = {
+    screen: 'home', sheet: false, range: '1A', txFilter: 'tutti', bMonth: 'nov', calDay: 3,
+    time: '14:32:08',
+    prices: { VWCE: 138.6, EIMI: 34.25, AGGH: 5.12, IGLN: 61.8, BTC: 92150, ETH: 3105 },
+    goals: [
+      { n: 'Fondo emergenza', s: 9000, t: 12000, m: 300 },
+      { n: 'Viaggio in Giappone', s: 2100, t: 4500, m: 250 },
+      { n: 'Anticipo casa', s: 15000, t: 40000, m: 600 }
+    ],
+    tx: [
+      { id: 1, d: '3 nov', mo: 'nov', m: 'Bar Centrale', cat: 'Ristoranti', acc: 'Carta di credito', a: -3.2, src: 'gpay' },
+      { id: 2, d: '3 nov', mo: 'nov', m: 'Coop', cat: 'Spesa', acc: 'Carta di credito', a: -46.85, src: 'gpay' },
+      { id: 3, d: '2 nov', mo: 'nov', m: 'PAC VWCE', cat: 'Investimenti', acc: 'Conto corrente', a: -300, src: 'prog' },
+      { id: 4, d: '2 nov', mo: 'nov', m: 'Trenitalia', cat: 'Trasporti', acc: 'Carta di credito', a: -24.9, src: 'gpay' },
+      { id: 5, d: '1 nov', mo: 'nov', m: 'Stipendio', cat: 'Entrate', acc: 'Conto corrente', a: 2450, src: 'bonifico' },
+      { id: 6, d: '1 nov', mo: 'nov', m: 'Pizzeria da Gino', cat: 'Ristoranti', acc: 'Carta di credito', a: -38, src: 'gpay' },
+      { id: 7, d: '31 ott', mo: 'ott', m: 'Farmacia San Marco', cat: 'Salute', acc: 'Contanti', a: -12.4, src: 'man' },
+      { id: 8, d: '31 ott', mo: 'ott', m: 'Amazon', cat: 'Shopping', acc: 'Carta di credito', a: -29.99, src: 'gpay' },
+      { id: 9, d: '30 ott', mo: 'ott', m: 'Internet casa', cat: 'Casa', acc: 'Conto corrente', a: -27.9, src: 'prog' },
+      { id: 10, d: '29 ott', mo: 'ott', m: 'Distributore Esso', cat: 'Trasporti', acc: 'Carta di credito', a: -55, src: 'gpay' }
+    ],
+    fAmt: '', fM: '', fCat: 'Spesa', fAcc: 'Carta di credito', fErr: false,
+    nTab: 'recenti',
+    prefsOn: { pay: true, pac: true, gpay: true, budget: true, market: false, weekly: true },
+    notifs: [
+      { id: 'pac', i: 'trending-up', t: 'Hai fatto il PAC di novembre?', b: 'VWCE · €300 programmati il 2 novembre. Confermalo per aggiornare le quote.', time: '08:00', unread: true, go: 'inv', action: 'Conferma PAC' },
+      { id: 'nfx', i: 'tv', t: 'Netflix tra 2 giorni', b: '€13,99 dalla carta ···4821 il 5 novembre.', time: '09:00', unread: true, go: 'cal' },
+      { id: 'coop', i: 'credit-card', t: 'Spesa registrata: Coop', b: '−€46,85 · Spesa. Tocca per cambiare categoria.', time: '12:41', unread: true, go: 'tx' },
+      { id: 'btc', i: 'trending-down', t: 'BTC −2,1% nelle ultime 24 ore', b: 'Il valore delle tue crypto è sceso, nulla da fare: è solo per tenerti informato.', time: 'ieri', unread: false, go: 'inv' },
+      { id: 'week', i: 'calendar-check', t: 'Riepilogo settimanale', b: 'Hai speso €113 questa settimana, il 18% in meno della tua media.', time: 'lun', unread: false, go: 'report' }
+    ],
+    op: false, oMode: 'op', oType: 'Acquisto', oKind: 'ETF', oT: '', oQ: '', oP: '', oDate: '2026-11-03', oPac: false, oErr: false, wNet: 'Bitcoin', wAddr: ''
+  };
+  open = { VWCE: 138.1, EIMI: 34.4, AGGH: 5.11, IGLN: 61.2, BTC: 90880, ETH: 3142 };
+  crypto = [
+    { t: 'BTC', n: 'Bitcoin', q: 0.085, cost: 5200, src: 'Ledger · bc1q…7f3k · saldo letto dalla blockchain' },
+    { t: 'ETH', n: 'Ethereum', q: 1.2, cost: 2900, src: 'Registrato a mano' }
+  ];
+  holdings = [
+    { t: 'VWCE', isin: 'IE00BK5BQT80', n: 'Vanguard FTSE All-World', q: 220, pmc: 104.2, c: '#5fbf8a' },
+    { t: 'EIMI', isin: 'IE00BKM4GZ66', n: 'iShares Core MSCI EM IMI', q: 300, pmc: 29.1, c: 'rgba(95,191,138,0.7)' },
+    { t: 'AGGH', isin: 'IE00BDBRDM35', n: 'iShares Core Global Aggregate Bond', q: 450, pmc: 4.95, c: 'rgba(95,191,138,0.45)' },
+    { t: 'IGLN', isin: 'IE00B4ND3602', n: 'iShares Physical Gold', q: 60, pmc: 38.5, c: 'rgba(95,191,138,0.25)' }
+  ];
+  accounts = [
+    { n: 'Conto corrente', sub: 'IBAN ···7730', b: 6842.3 },
+    { n: 'Conto deposito', sub: 'Vincolato fino a giugno 2027 · 3,1% lordo', b: 15000 },
+    { n: 'Carta di credito', sub: '···4821 · collegata a Google Pay', b: -412.8 },
+    { n: 'Liquidità conto titoli', sub: 'Saldo aggiornato da te', b: 1250 },
+    { n: 'Contanti', sub: 'Portafoglio', b: 85 }
+  ];
+  cats = [
+    { n: 'Spesa', b: 400 }, { n: 'Ristoranti', b: 150 }, { n: 'Trasporti', b: 120 }, { n: 'Casa', b: 850 },
+    { n: 'Shopping', b: 150 }, { n: 'Salute', b: 60 }, { n: 'Abbonamenti', b: 60 }
+  ];
+  oct = { Spesa: 362.4, Ristoranti: 178, Trasporti: 74.5, Casa: 877.9, Shopping: 119.99, Salute: 24.4, Abbonamenti: 67.96 };
+  pays = [
+    { d: 2, n: 'PAC VWCE', a: 300, k: 'PAC · da confermare', i: 'trending-up' },
+    { d: 5, n: 'Netflix', a: 13.99, k: 'Streaming', i: 'tv' },
+    { d: 8, n: 'Ricarica telefono', a: 10, k: 'Ricarica', i: 'smartphone' },
+    { d: 10, n: 'Palestra', a: 39, k: 'Abbonamento', i: 'dumbbell' },
+    { d: 12, n: 'Spotify', a: 10.99, k: 'Musica', i: 'music' },
+    { d: 15, n: 'Bolletta luce', a: 58.4, k: 'Bolletta', i: 'zap' },
+    { d: 16, n: 'Assicurazione auto', a: 42.1, k: 'Assicurazione', i: 'car' },
+    { d: 20, n: 'iCloud+', a: 2.99, k: 'Cloud', i: 'cloud' },
+    { d: 27, n: 'Affitto', a: 750, k: 'Casa', i: 'house' },
+    { d: 30, n: 'Internet casa', a: 27.9, k: 'Bolletta', i: 'wifi' }
+  ];
+  componentDidMount() {
+    this.timer = setInterval(() => {
+      this.setState(s => {
+        const p = {};
+        for (const k in s.prices) p[k] = +(s.prices[k] * (1 + (Math.random() - 0.5) * (k === 'BTC' || k === 'ETH' ? 0.008 : 0.003))).toFixed(2);
+        return { prices: p, time: new Date().toLocaleTimeString('it-IT') };
+      });
+    }, 3000);
+  }
+  componentWillUnmount() { clearInterval(this.timer); }
+  num(v, d = 2) {
+    const [i, f] = Math.abs(v).toFixed(d).split('.');
+    return i.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + (f ? ',' + f : '');
+  }
+  eur(v, sign) { return (v < 0 ? '−' : (sign && v > 0 ? '+' : '')) + '€' + this.num(v); }
+  pct(v) { return (v < 0 ? '−' : '+') + this.num(v) + '%'; }
+  renderVals() {
+    const s = this.state, desk = this.props.device !== 'mobile';
+    const ACC = '#5fbf8a', NEG = '#e5675a', MUT = '#8a948f', TXT = '#e6ebe8', ON = '#0b1410', HOV = '#1b201e';
+    const pn = v => v < 0 ? NEG : ACC;
+    const go = id => () => this.setState({ screen: id, sheet: false });
+    const navDefs = [['home', 'Patrimonio'], ['tx', 'Movimenti'], ['budget', 'Budget'], ['conti', 'Conti e carte'], ['inv', 'Investimenti'], ['goals', 'Obiettivi'], ['cal', 'Calendario'], ['report', 'Report']];
+    const nav = navDefs.map(([id, label]) => { const a = s.screen === id; return { label, onClick: go(id), bg: a ? HOV : 'transparent', color: a ? TXT : MUT, mark: a ? ACC : 'transparent' }; });
+    const altroIds = ['budget', 'conti', 'goals', 'cal', 'report', 'altro'];
+    const tab = ([id, label]) => { const a = id === 'altro' ? altroIds.includes(s.screen) : s.screen === id; return { label, onClick: go(id), color: a ? TXT : MUT, mark: a ? ACC : 'transparent' }; };
+    const descs = { budget: 'Limiti di spesa per categoria', conti: 'Saldi di conti, carte e broker', goals: 'Quanto manca ai tuoi traguardi', cal: 'Pagamenti programmati del mese', report: 'Andamento di entrate e uscite' };
+    const altro = [...navDefs.filter(n => descs[n[0]]).map(([id, label]) => ({ label, desc: descs[id], onClick: go(id) })), { label: 'Rivedi introduzione', desc: 'Le funzioni principali in 6 passaggi', onClick: () => this.setState({ onb: 0 }) }];
+    const titles = { home: ['Patrimonio', 'Ciao Marco, ecco il quadro aggiornato del tuo patrimonio.'], tx: ['Movimenti', 'Le spese con Google Pay arrivano da sole. Il resto lo aggiungi tu.'], budget: ['Budget', 'Quanto hai speso rispetto ai limiti che ti sei dato.'], conti: ['Conti e carte', 'Tutti i saldi in un posto solo.'], inv: ['Investimenti', 'Tu registri le quantità, i prezzi si aggiornano da soli.'], goals: ['Obiettivi', 'Un passo alla volta verso i tuoi traguardi.'], cal: ['Calendario', 'Abbonamenti, ricariche e bollette in arrivo.'], report: ['Report', 'Come si muovono entrate e uscite nel tempo.'], altro: ['Altro', 'Tutte le sezioni della tua app.'] };
+
+    const HOLD = s.hold || this.holdings, CRY = s.cry || this.crypto, CQ = s.cometaQ ?? 612.4, CC = s.cometaCost ?? 12400;
+    const H = HOLD.map(h => { const p = s.prices[h.t], v = p * h.q, cost = h.pmc * h.q; return { ...h, p, v, cost, pl: v - cost, day: (p / this.open[h.t] - 1) * 100, dayAbs: (p - this.open[h.t]) * h.q }; });
+    const invTot = H.reduce((a, h) => a + h.v, 0), invCost = H.reduce((a, h) => a + h.cost, 0), invDayAbs = H.reduce((a, h) => a + h.dayAbs, 0);
+    const holdings = H.map(h => ({ t: h.t, n: h.n, isin: h.isin, c: h.c, q: h.q, priceStr: this.eur(h.p), valStr: this.eur(h.v), dayStr: this.pct(h.day), dayColor: pn(h.day), plPctStr: this.pct(h.pl / h.cost * 100), plColor: pn(h.pl), wStr: (h.v / invTot * 100).toFixed(1) + '%' }));
+    const added = n => s.tx.filter(t => t.added && t.acc === n).reduce((a, t) => a + t.a, 0);
+    const A = this.accounts.map(a => ({ ...a, bal: a.b + added(a.n) }));
+    const cometa = { q: CQ, nav: 22.18, cost: CC }, cometaV = cometa.q * cometa.nav;
+    const CR = CRY.map(c => { const p = s.prices[c.t], v = p * c.q; return { ...c, p, v, day: (p / this.open[c.t] - 1) * 100 }; });
+    const crTot = CR.reduce((a, c) => a + c.v, 0), crCost = CR.reduce((a, c) => a + c.cost, 0);
+    const liq = A.reduce((a, x) => a + x.bal, 0), net = liq + invTot + cometaV + crTot;
+    const icon = n => 'url(https://unpkg.com/lucide-static@0.460.0/icons/' + n + '.svg)';
+
+    const hist = [];
+    for (let i = 0; i < 24; i++) hist.push(46000 + i * 1000 + Math.sin(i * 1.7) * 1500 + Math.cos(i * 0.6) * 900);
+    const k = net / hist[23];
+    for (let i = 0; i < 24; i++) hist[i] *= k;
+    const mn = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'];
+    const lab = i => mn[(11 + i) % 12] + ' ' + (24 + Math.floor((11 + i) / 12));
+    const n = { '6M': 6, '1A': 12, '2A': 24 }[s.range], vals = hist.slice(-n);
+    const lo = Math.min(...vals), hi = Math.max(...vals);
+    const line = vals.map((v, i) => (i / (n - 1) * 600).toFixed(1) + ',' + (160 - (v - lo) / (hi - lo || 1) * 140).toFixed(1)).join(' ');
+    const e = React.createElement;
+    const chart = e('svg', { viewBox: '0 0 600 170', preserveAspectRatio: 'none', style: { width: '100%', height: 180, display: 'block' } },
+      [0, 1, 2, 3].map(k => e('line', { key: k, x1: 0, x2: 600, y1: 20 + k * 46.7, y2: 20 + k * 46.7, stroke: '#1d2321', strokeWidth: 1, vectorEffect: 'non-scaling-stroke' })),
+      e('polygon', { key: 'a', points: '0,170 ' + line + ' 600,170', fill: 'rgba(95,191,138,0.12)' }),
+      e('polyline', { key: 'l', points: line, fill: 'none', stroke: ACC, strokeWidth: 2, strokeLinejoin: 'round', vectorEffect: 'non-scaling-stroke' }));
+    const ch = vals[n - 1] - vals[0];
+    const liveDot = e('span', { style: { width: 7, height: 7, background: ACC, display: 'inline-block', animation: 'none', opacity: s.time.endsWith('0') || s.time.endsWith('5') ? 0.4 : 1, transition: 'opacity .4s' } });
+
+    const nov = s.tx.filter(t => t.mo === 'nov');
+    const novIn = nov.filter(t => t.a > 0 && t.cat !== 'Investimenti').reduce((a, t) => a + t.a, 0);
+    const novOut = -nov.filter(t => t.a < 0 && t.cat !== 'Investimenti').reduce((a, t) => a + t.a, 0);
+    const novInv = -nov.filter(t => t.cat === 'Investimenti').reduce((a, t) => a + t.a, 0);
+    const txRow = t => ({ d: t.d, m: t.m, isAuto: t.src === 'gpay', meta: t.cat + ' · ' + t.acc + ({ prog: ' · Programmato', bonifico: ' · Bonifico', man: ' · Manuale' }[t.src] || ''), amtStr: this.eur(t.a, true), color: t.a > 0 ? ACC : TXT });
+    const fl = s.txFilter === 'auto' ? s.tx.filter(t => t.src === 'gpay') : s.txFilter === 'man' ? s.tx.filter(t => t.src !== 'gpay') : s.tx;
+    const seg = (cur, val, set) => ({ bg: cur === val ? ACC : 'transparent', color: cur === val ? ON : MUT, onClick: () => this.setState(set) });
+
+    const spentOf = s.bMonth === 'nov' ? c => -nov.filter(t => t.cat === c && t.a < 0).reduce((a, t) => a + t.a, 0) : c => this.oct[c] || 0;
+    const budgets = this.cats.map(c => { const sp = spentOf(c.n), over = sp > c.b; return { n: c.n, spent: this.eur(sp), budget: this.eur(c.b), w: Math.min(100, sp / c.b * 100) + '%', bar: over ? NEG : ACC, pctStr: Math.round(sp / c.b * 100) + '%', note: over ? 'Sforato di ' + this.eur(sp - c.b) : 'Restano ' + this.eur(c.b - sp), noteColor: over ? NEG : MUT }; });
+    const bS = this.cats.reduce((a, c) => a + spentOf(c.n), 0), bT = this.cats.reduce((a, c) => a + c.b, 0);
+
+    const cells = [];
+    const blank = () => ({ label: '', onClick: () => {}, bg: 'transparent', color: MUT, border: '1px solid transparent', dot: 'transparent', mask: 'none' });
+    for (let i = 0; i < 6; i++) cells.push(blank());
+    for (let d = 1; d <= 30; d++) {
+      const pd = this.pays.find(p => p.d === d), has = !!pd, sel = d === s.calDay;
+      cells.push({ label: String(d), onClick: () => this.setState({ calDay: d }), bg: sel ? ACC : 'transparent', color: sel ? ON : d < 3 ? '#5a635f' : TXT, border: d === 3 && !sel ? '1px solid ' + ACC : '1px solid transparent', dot: has ? (sel ? ON : ACC) : 'transparent', mask: has ? icon(pd.i) : 'none' });
+    }
+    while (cells.length % 7) cells.push(blank());
+    const dp = this.pays.filter(p => p.d === s.calDay);
+    const up = this.pays.filter(p => p.d >= 3);
+    const payRow = p => ({ n: p.n, k: p.k, icon: icon(p.i), amt: this.eur(p.a), when: p.d + ' nov', rel: p.d === 3 ? 'oggi' : 'tra ' + (p.d - 3) + ' gg' });
+
+    const goals = s.goals.map((g, i) => { const left = Math.ceil((g.t - g.s) / g.m), idx = 10 + left; return { n: g.n, saved: this.eur(g.s), target: this.eur(g.t), w: (g.s / g.t * 100) + '%', pctStr: Math.round(g.s / g.t * 100) + '%', monthly: 'Versi ' + this.eur(g.m) + ' al mese', eta: g.s >= g.t ? 'Obiettivo raggiunto, complimenti!' : 'Ci arrivi a ' + mn[idx % 12] + ' ' + (2026 + Math.floor(idx / 12)), add: () => this.setState(st => ({ goals: st.goals.map((x, j) => j === i ? { ...x, s: Math.min(x.t, x.s + 100) } : x) })) }; });
+
+    const flowD = [['giu', 2450, 1690], ['lug', 2450, 2120], ['ago', 2450, 1980], ['set', 2450, 1610], ['ott', 2600, 1725], ['nov', novIn, novOut]];
+    const flow = flowD.map(([m, i, o]) => ({ m, hi: (i / 2700 * 100) + '%', ho: (o / 2700 * 100) + '%' }));
+    const octMax = Math.max(...Object.values(this.oct));
+    const catBars = Object.entries(this.oct).sort((a, b) => b[1] - a[1]).map(([k, v]) => ({ n: k, v: this.eur(v), w: (v / octMax * 100) + '%' }));
+    const avgOut = flowD.slice(0, 5).reduce((a, f) => a + f[2], 0) / 5;
+
+    const chip = (cur, key) => l => ({ label: l, onClick: () => this.setState({ [key]: l }), bg: cur === l ? ACC : 'transparent', color: cur === l ? ON : TXT, border: cur === l ? ACC : '#262c2a' });
+
+    const parse = v => parseFloat(String(v).replace(/\s/g, '').replace(',', '.'));
+    const openOp = () => this.setState({ op: true, oMode: 'op', oErr: false, sheet: false });
+    const openWallet = () => this.setState({ op: true, oMode: 'wallet', oErr: false, sheet: false });
+    const oq = parse(s.oQ), opp = parse(s.oP);
+    const saveOp = () => {
+      const T = s.oT.trim().toUpperCase();
+      if (!(oq > 0) || !(opp > 0) || (s.oKind !== 'Fondo pensione' && !T)) return this.setState({ oErr: true });
+      const sg = s.oType === 'Acquisto' ? 1 : -1, day = parseInt(s.oDate.slice(8, 10)) || 3, mi = (parseInt(s.oDate.slice(5, 7)) || 11) - 1;
+      const st = { op: false, oT: '', oQ: '', oP: '', oErr: false, oPac: false, screen: 'inv' };
+      let label = T;
+      if (s.oKind === 'ETF') {
+        const ex = HOLD.find(h => h.t === T || h.isin === T);
+        if (ex) { label = ex.t; st.hold = HOLD.map(h => h === ex ? { ...h, q: Math.max(0, h.q + sg * oq), pmc: sg > 0 ? (h.pmc * h.q + opp * oq) / (h.q + oq) : h.pmc } : h); }
+        else { const t = T.length > 6 ? T.slice(-6) : T; label = t; this.open[t] = opp; st.prices = { ...s.prices, [t]: opp }; st.hold = [...HOLD, { t, isin: T.length > 6 ? T : '—', n: 'Aggiunto da te', q: oq, pmc: opp, c: 'rgba(95,191,138,0.15)' }]; }
+      } else if (s.oKind === 'Crypto') {
+        const ex = CRY.find(c => c.t === T);
+        if (ex) st.cry = CRY.map(c => c === ex ? { ...c, q: Math.max(0, c.q + sg * oq), cost: Math.max(0, c.cost + sg * opp * oq) } : c);
+        else { this.open[T] = opp; st.prices = { ...s.prices, [T]: opp }; st.cry = [...CRY, { t: T, n: T, q: oq, cost: opp * oq, src: 'Registrato a mano' }]; }
+      } else { label = 'Fondo Cometa'; st.cometaQ = Math.max(0, CQ + sg * oq); st.cometaCost = CC + sg * opp * oq; }
+      st.tx = [{ id: Date.now(), d: day + ' ' + mn[mi], mo: mn[mi], m: s.oType + ' ' + label, cat: 'Investimenti', acc: 'Conto titoli', a: -sg * opp * oq, src: 'man' }, ...s.tx];
+      if (s.oPac && sg > 0) this.pays = [...this.pays, { d: day, n: 'PAC ' + label, a: opp * oq, k: 'PAC · da confermare', i: 'trending-up' }].sort((a, b) => a.d - b.d);
+      this.setState(st);
+    };
+    const saveWallet = () => {
+      const a = s.wAddr.trim();
+      if (a.length < 8) return this.setState({ oErr: true });
+      const btc = s.wNet === 'Bitcoin', q = btc ? 0.0125 : 0.42;
+      this.setState({ op: false, wAddr: '', oErr: false, screen: 'inv', cry: [...CRY, { t: btc ? 'BTC' : 'ETH', n: s.wNet + ' · nuovo wallet', q, cost: q * s.prices[btc ? 'BTC' : 'ETH'], src: 'Indirizzo ' + a.slice(0, 6) + '…' + a.slice(-4) + ' · saldo letto dalla blockchain' }] });
+    };
+    const onbStep = s.onb ?? (this.props.onboarding ? 0 : -1);
+    const nOpen = s.nOpen ?? !!this.props.openNotifs;
+    const ONB = [
+      ['Benvenuto', 'Tutto il tuo patrimonio, in un posto solo.', 'Conti, carte, investimenti, fondo pensione e crypto: vedi quanto vale tutto insieme e come cambia nel tempo.', []],
+      ['Spese automatiche', 'Paghi con Google Pay, al resto pensiamo noi.', 'Ogni pagamento con la carta collegata viene registrato e categorizzato da solo. Contanti e altre spese li aggiungi in pochi secondi.', ['Categoria assegnata in automatico, la cambi quando vuoi', 'Una notifica per ogni spesa registrata']],
+      ['Investimenti', 'Registri cosa possiedi, i prezzi si aggiornano da soli.', 'Nessun collegamento diretto ai broker. Inserisci acquisti e vendite o importa il CSV: il valore si calcola con le quotazioni di mercato.', ['ETF e azioni tramite ISIN o ticker', 'Fondo pensione con il valore quota mensile', 'Crypto da hardware wallet con il solo indirizzo pubblico']],
+      ['Budget e obiettivi', 'Sai sempre quanto puoi ancora spendere.', 'Imposta un limite per categoria e un traguardo di risparmio. Vedi a che punto sei e quando lo raggiungerai.', ['Avviso quando superi l\'80% di una categoria']],
+      ['Calendario', 'Nessun pagamento ti coglie di sorpresa.', 'Abbonamenti, ricariche, bollette e PAC in un calendario unico, con il totale in uscita del mese.', ['Promemoria il giorno prima di ogni addebito', 'I PAC ti chiedono solo una conferma']],
+      ['Notifiche', 'Scegli tu quando sentirci.', 'Ti avvisiamo solo per le cose che contano. Puoi cambiare queste preferenze in qualsiasi momento dalla campanella.', []]
+    ];
+    const ob = ONB[Math.max(0, onbStep)];
+    const prefDefs = [['pay', 'Pagamenti in arrivo', 'Il giorno prima di ogni addebito programmato'], ['pac', 'Conferma PAC', 'È il momento di registrare il versamento'], ['gpay', 'Spese registrate', 'A ogni pagamento con Google Pay'], ['budget', 'Budget quasi esaurito', 'Quando superi l\'80% di una categoria'], ['market', 'Movimenti di mercato', 'Variazioni oltre il 3% in un giorno'], ['weekly', 'Riepilogo settimanale', 'Ogni lunedì mattina']];
+    const prefs = prefDefs.map(([k, l, d]) => { const on = s.prefsOn[k]; return { l, d, bg: on ? ACC : 'transparent', border: on ? ACC : '#262c2a', knob: on ? ON : MUT, justify: on ? 'flex-end' : 'flex-start', toggle: () => this.setState(st => ({ prefsOn: { ...st.prefsOn, [k]: !st.prefsOn[k] } })) }; });
+    const markRead = id => this.setState(st => ({ notifs: st.notifs.map(x => x.id === id ? { ...x, unread: false } : x) }));
+    const confirmPac = () => {
+      const p = s.prices.VWCE, add = 300 / p;
+      this.setState(st => ({ notifs: st.notifs.map(x => x.id === 'pac' ? { ...x, unread: false, done: true } : x), hold: HOLD.map(h => h.t === 'VWCE' ? { ...h, pmc: (h.pmc * h.q + 300) / (h.q + add), q: +(h.q + add).toFixed(3) } : h) }));
+    };
+    const notifs = s.notifs.map(x => ({ t: x.t, b: x.b, time: x.time, icon: icon(x.i), bg: x.unread ? 'rgba(95,191,138,0.05)' : 'transparent', mark: x.unread ? ACC : 'transparent', hasAction: !!x.action && !x.done, actLabel: x.action, done: !!x.done, doneLabel: 'Confermato · quote VWCE aggiornate', act: ev => { ev.stopPropagation(); confirmPac(); }, later: ev => { ev.stopPropagation(); markRead(x.id); }, onClick: () => { markRead(x.id); if (!x.action || x.done) this.setState({ nOpen: false, screen: x.go }); } }));
+    const unread = s.notifs.filter(x => x.unread).length;
+    const endOnb = () => this.setState({ onb: -1, screen: 'home' });
+    return {
+      showOnb: onbStep >= 0, onbNum: String(onbStep + 1).padStart(2, '0') + ' / 06 · ' + ob[0].toUpperCase(), onbTitle: ob[1], onbBody: ob[2], onbPoints: ob[3],
+      onb0: onbStep === 0, onb1: onbStep === 1, onb2: onbStep === 2, onb3: onbStep === 3, onb4: onbStep === 4, onb5: onbStep === 5,
+      onbDots: ONB.map((_, i) => ({ c: i <= onbStep ? ACC : '#262c2a' })), onbCanBack: onbStep > 0,
+      onbBack: () => this.setState({ onb: onbStep - 1 }), onbNext: onbStep >= 5 ? endOnb : () => this.setState({ onb: onbStep + 1 }),
+      onbNextLabel: onbStep >= 5 ? (desk ? 'Attiva notifiche e inizia' : 'Attiva e inizia') : onbStep === 0 ? 'Iniziamo' : 'Avanti', skipOnb: endOnb, startOnb: () => this.setState({ onb: 0, nOpen: false }),
+      gpayDemo: s.tx.filter(t => t.src === 'gpay').slice(0, 3).map(txRow),
+      onbInv: [{ n: 'ETF', how: 'Registri le quote · prezzo da ISIN', v: this.eur(invTot), icon: icon('chart-line') }, { n: 'Fondo pensione', how: 'Quote × valore quota mensile', v: this.eur(cometaV), icon: icon('landmark') }, { n: 'Crypto', how: 'Indirizzo pubblico · saldo dalla blockchain', v: this.eur(crTot), icon: icon('wallet') }],
+      onbBudgets: budgets.slice(0, 3), onbGoal: goals[0],
+      prefs, notifs, unread, hasUnread: unread > 0, nOpen,
+      openN: () => this.setState({ nOpen: true, nTab: 'recenti' }), closeN: () => this.setState({ nOpen: false }),
+      readAll: () => this.setState(st => ({ notifs: st.notifs.map(x => ({ ...x, unread: false })) })),
+      nTabs: [['recenti', 'Recenti'], ['pref', 'Preferenze']].map(([v, l]) => ({ label: l, onClick: () => this.setState({ nTab: v }), color: s.nTab === v ? TXT : MUT, mark: s.nTab === v ? ACC : 'transparent' })),
+      nRecent: s.nTab === 'recenti', nPrefsTab: s.nTab === 'pref',
+      nBackdrop: desk ? 'rgba(0,0,0,0.35)' : '#0e1110', nPad: desk ? '72px 20px 20px' : '0', nW: desk ? '400px' : '100%', nH: desk ? 'auto' : '100%',
+      headLabel: s.screen === 'inv' ? '+ Nuova operazione' : '+ Aggiungi spesa',
+      headClick: s.screen === 'inv' ? openOp : () => this.setState({ sheet: true }),
+      op: s.op, openOp, openWallet, saveOp, saveWallet, closeOp: () => this.setState({ op: false, oErr: false }),
+      isOpMode: s.oMode === 'op', isWalletMode: s.oMode === 'wallet',
+      oModes: [['op', 'Operazione'], ['wallet', 'Wallet crypto']].map(([v, l]) => ({ label: l, ...seg(s.oMode, v, { oMode: v, oErr: false }) })),
+      oTypes: ['Acquisto', 'Vendita'].map(chip(s.oType, 'oType')),
+      oKinds: ['ETF', 'Crypto', 'Fondo pensione'].map(chip(s.oKind, 'oKind')),
+      oNeedsT: s.oKind !== 'Fondo pensione', oTPh: s.oKind === 'ETF' ? 'ISIN o ticker, es. IE00BK5BQT80' : 'Simbolo, es. BTC',
+      oPriceLabel: s.oKind === 'Fondo pensione' ? 'Valore quota' : 'Prezzo unitario',
+      oT: s.oT, oQ: s.oQ, oP: s.oP, oDate: s.oDate, oErr: s.oErr,
+      onOT: ev => this.setState({ oT: ev.target.value, oErr: false }), onOQ: ev => this.setState({ oQ: ev.target.value, oErr: false }), onOP: ev => this.setState({ oP: ev.target.value, oErr: false }), onODate: ev => this.setState({ oDate: ev.target.value }),
+      oTotal: oq > 0 && opp > 0 ? this.eur(oq * opp) : '—',
+      togglePac: () => this.setState({ oPac: !s.oPac }), pacBg: s.oPac ? ACC : 'transparent', pacColor: s.oPac ? ON : TXT, pacBorder: s.oPac ? ACC : '#262c2a', pacMark: s.oPac ? '✓' : '',
+      wNets: ['Bitcoin', 'Ethereum'].map(chip(s.wNet, 'wNet')), wAddr: s.wAddr, onWAddr: ev => this.setState({ wAddr: ev.target.value, oErr: false }),
+      isDesktop: desk, isMobile: !desk, nav, altro,
+      tabsL: [['home', 'Home'], ['tx', 'Movimenti']].map(tab), tabsR: [['inv', 'Investimenti'], ['altro', 'Altro']].map(tab),
+      title: titles[s.screen][0], subtitle: titles[s.screen][1],
+      sHome: s.screen === 'home', sTx: s.screen === 'tx', sBudget: s.screen === 'budget', sConti: s.screen === 'conti', sInv: s.screen === 'inv', sGoals: s.screen === 'goals', sCal: s.screen === 'cal', sReport: s.screen === 'report', sAltro: s.screen === 'altro',
+      goCal: go('cal'), goTx: go('tx'),
+      netStr: this.eur(net), chart, chartStart: lab(24 - n), chartEnd: 'oggi',
+      rangeChange: this.eur(ch, true) + ' (' + this.pct(ch / vals[0] * 100) + ')', rangeColor: pn(ch),
+      rangeLabel: { '6M': 'negli ultimi 6 mesi', '1A': "nell'ultimo anno", '2A': 'negli ultimi 2 anni' }[s.range],
+      ranges: ['6M', '1A', '2A'].map(r => ({ label: r, ...seg(s.range, r, { range: r }) })),
+      alloc: [{ n: 'ETF', v: invTot, c: ACC }, { n: 'Fondo Cometa', v: cometaV, c: 'rgba(95,191,138,0.6)' }, { n: 'Crypto', v: crTot, c: 'rgba(95,191,138,0.3)' }, { n: 'Liquidità', v: liq, c: MUT }].map(a => ({ ...a, w: (a.v / net * 100) + '%', pct: Math.round(a.v / net * 100) + '%', val: this.eur(a.v) })),
+      novIn: this.eur(novIn, true), novOut: this.eur(-novOut), novInv: this.eur(novInv),
+      novNote: 'Finora hai messo da parte il ' + Math.round((novIn - novOut) / novIn * 100) + '% di quello che è entrato. Ottimo inizio di mese.',
+      nextPays: up.slice(0, 4).map(payRow), recentTx: s.tx.slice(0, 5).map(txRow),
+      autoCount: nov.filter(t => t.src === 'gpay').length,
+      txFilters: [['tutti', 'Tutti'], ['auto', 'Google Pay'], ['man', 'Altri']].map(([v, l]) => ({ label: l, ...seg(s.txFilter, v, { txFilter: v }) })),
+      txList: fl.map(txRow), txCount: fl.length + ' movimenti',
+      bMonths: [['ott', 'Ottobre'], ['nov', 'Novembre']].map(([v, l]) => ({ label: l, ...seg(s.bMonth, v, { bMonth: v }) })),
+      budgets, bSpent: this.eur(bS), bTotal: this.eur(bT), bW: Math.min(100, bS / bT * 100) + '%',
+      bNote: s.bMonth === 'nov' ? 'Giorno 3 di 30 · hai usato il ' + Math.round(bS / bT * 100) + '% del budget mensile.' : 'Mese chiuso · ' + (bS > bT ? 'sforato di ' + this.eur(bS - bT) : 'avanzati ' + this.eur(bT - bS)) + '.',
+      liqStr: this.eur(liq), accCount: A.length, accounts: A.map(a => ({ n: a.n, sub: a.sub, balStr: this.eur(a.bal), color: a.bal < 0 ? NEG : TXT })),
+      holdings, invStr: this.eur(invTot), invPl: this.eur(invTot - invCost, true) + ' (' + this.pct((invTot - invCost) / invCost * 100) + ')', invPlColor: pn(invTot - invCost),
+      invDay: this.eur(invDayAbs, true) + ' (' + this.pct(invDayAbs / (invTot - invDayAbs) * 100) + ')', invDayColor: pn(invDayAbs), invCost: this.eur(invCost), time: s.time, liveDot,
+      goals,
+      cometaVal: this.eur(cometaV), cometaQuote: this.num(cometa.q) + ' quote × ' + this.eur(cometa.nav),
+      cometaPl: this.eur(cometaV - cometa.cost, true) + ' (' + this.pct((cometaV / cometa.cost - 1) * 100) + ')', cometaPlColor: pn(cometaV - cometa.cost),
+      crypto: CR.map(c => ({ t: c.t, n: c.n, src: c.src, qs: this.num(c.q, c.q < 1 ? 4 : 2) + ' ' + c.t, priceStr: this.eur(c.p), valStr: this.eur(c.v), dayStr: this.pct(c.day), dayColor: pn(c.day) })),
+      crTotStr: this.eur(crTot), crPl: this.eur(crTot - crCost, true) + ' (' + this.pct((crTot / crCost - 1) * 100) + ')', crPlColor: pn(crTot - crCost),
+      cells, calTotal: this.eur(up.reduce((a, p) => a + p.a, 0)) + ' in arrivo', dayTitle: s.calDay + ' novembre', dayPays: dp.map(payRow), dayEmpty: dp.length === 0, upcoming: up.map(payRow),
+      kpis: [{ l: 'Tasso di risparmio · ott', v: '34%' }, { l: 'Spesa media mensile', v: this.eur(avgOut) }, { l: 'Crescita patrimonio · 12 mesi', v: this.pct((hist[23] / hist[11] - 1) * 100) }],
+      flow, catBars,
+      sheet: s.sheet, openSheet: () => this.setState({ sheet: true }), closeSheet: () => this.setState({ sheet: false, fErr: false }), stop: ev => ev.stopPropagation(),
+      sheetAlign: desk ? 'center' : 'flex-end', sheetW: desk ? '460px' : '100%',
+      fAmt: s.fAmt, fM: s.fM, fErr: s.fErr, amtBorder: s.fErr ? NEG : '#262c2a',
+      onAmt: ev => this.setState({ fAmt: ev.target.value, fErr: false }), onM: ev => this.setState({ fM: ev.target.value }),
+      catChips: this.cats.map(c => c.n).map(chip(s.fCat, 'fCat')),
+      accChips: ['Carta di credito', 'Conto corrente', 'Contanti'].map(chip(s.fAcc, 'fAcc')),
+      save: () => {
+        const v = parseFloat(String(s.fAmt).replace(/\./g, '').replace(',', '.'));
+        if (!(v > 0)) return this.setState({ fErr: true });
+        const t = { id: Date.now(), d: '3 nov', mo: 'nov', m: s.fM.trim() || s.fCat, cat: s.fCat, acc: s.fAcc, a: -v, src: 'man', added: true };
+        this.setState({ tx: [t, ...s.tx], sheet: false, screen: 'tx', txFilter: 'tutti', fAmt: '', fM: '', fErr: false });
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>
