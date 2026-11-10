@@ -111,7 +111,7 @@ export interface Goal {
 }
 
 export type NotifType = 'pay' | 'pac' | 'gpay' | 'budget' | 'market' | 'weekly';
-export type Screen = 'home' | 'tx' | 'budget' | 'conti' | 'inv' | 'goals' | 'cal' | 'report' | 'altro' | 'backup';
+export type Screen = 'home' | 'tx' | 'budget' | 'conti' | 'inv' | 'goals' | 'cal' | 'report' | 'altro' | 'backup' | 'gpay';
 
 export interface AppNotification {
   id: string;

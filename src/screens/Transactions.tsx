@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { isWalletAccessEnabled, walletListenerAvailable } from '../services/walletListener';
 import { Seg, TxRow } from '../components/ui';
 import { monthKey } from '../lib/dates';
 import { useStore } from '../store';
@@ -6,7 +7,15 @@ import { useStore } from '../store';
 type Filter = 'tutti' | 'auto' | 'man';
 
 export function Transactions() {
-  const { data, setUi } = useStore();
+  const { data, setUi, go } = useStore();
+  const [access, setAccess] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!walletListenerAvailable()) return;
+    const check = () => { isWalletAccessEnabled().then(setAccess); };
+    check();
+    document.addEventListener('visibilitychange', check);
+    return () => document.removeEventListener('visibilitychange', check);
+  }, []);
   const [filter, setFilter] = useState<Filter>('tutti');
   const card = data.accounts.find((a) => a.gpay_linked);
   const mk = monthKey(new Date());
@@ -17,13 +26,21 @@ export function Transactions() {
 
   return (
     <div className="stack">
-      {card ? (
-        <div style={{ border: '1px solid var(--border)', background: 'var(--a12)', padding: '14px 16px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+      {access === false ? (
+        <div className="pressable" onClick={() => go('gpay')} style={{ border: '1px solid var(--border)', background: 'var(--neg-tint)', padding: '14px 16px', display: 'flex', gap: 12, alignItems: 'flex-start', cursor: 'pointer' }}>
+          <span style={{ width: 8, height: 8, background: 'var(--neg)', marginTop: 6, flexShrink: 0 }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <div style={{ fontWeight: 600 }}>Spese automatiche non attive</div>
+            <div className="muted pretty" style={{ fontSize: 13 }}>L'app non ha l'accesso alle notifiche, quindi i pagamenti con Google Pay e Revolut non vengono registrati. Tocca per attivarlo.</div>
+          </div>
+        </div>
+      ) : access ? (
+        <div className="pressable" onClick={() => go('gpay')} style={{ border: '1px solid var(--border)', background: 'var(--a12)', padding: '14px 16px', display: 'flex', gap: 12, alignItems: 'flex-start', cursor: 'pointer' }}>
           <span style={{ width: 8, height: 8, background: 'var(--accent)', marginTop: 6, flexShrink: 0 }} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <div style={{ fontWeight: 600 }}>Google Pay è collegato</div>
             <div className="muted pretty" style={{ fontSize: 13 }}>
-              Quando paghi con la carta ···{card.card_last4} la spesa compare qui con categoria già assegnata. {autoCount} movimenti registrati in automatico questo mese.
+              Quando paghi con {card ? `la carta ···${card.card_last4}` : 'Google Pay o Revolut'} la spesa compare qui con categoria già assegnata. {autoCount} movimenti registrati in automatico questo mese.
             </div>
           </div>
         </div>

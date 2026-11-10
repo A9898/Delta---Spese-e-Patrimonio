@@ -60,7 +60,14 @@ Non esiste un'API pubblica per le transazioni di Google Wallet, quindi l'app leg
 4. Categoria: prima le regole che crei tu (cambiando la categoria di un movimento Google Pay si crea una regola per quel commerciante), poi un elenco di parole chiave.
 5. Il movimento viene salvato con `source = 'gpay'` e il badge "G PAY · AUTO".
 
-L'accesso alle notifiche si concede all'ultimo passaggio dell'introduzione, che apre le impostazioni di sistema. Per aggiungere l'app di una banca, aggiungi il suo pacchetto in `WalletNotificationService.PACKAGES` e in `WALLET_PACKAGES` (`gpayParser.ts`).
+L'accesso alle notifiche si concede all'ultimo passaggio dell'introduzione, oppure da *Altro › Pagamenti automatici*. Con un APK installato a mano, Android 13+ blocca questo permesso come "impostazione con restrizioni": va sbloccato da Info app › ⋮ › *Consenti impostazioni con restrizioni*.
+
+*Altro › Pagamenti automatici* mostra:
+- se l'accesso è attivo;
+- le ultime notifiche ricevute, con l'esito del riconoscimento e il tasto per registrarle a mano;
+- una modalità a tempo (10 minuti) che registra le notifiche di tutte le app, per scoprire il formato di una banca non ancora supportata.
+
+App ascoltate: Google Wallet, Google Pay e Revolut. Se lo stesso pagamento arriva da Google Wallet e da Revolut, viene registrato una volta sola. Per aggiungere l'app di una banca, aggiungi il suo pacchetto in `WalletNotificationService.PACKAGES` e in `WALLET_PACKAGES` (`gpayParser.ts`).
 
 Il plugin è scritto in Java, non in Kotlin come suggeriva l'handoff: il progetto Capacitor generato è in Java e così non serve configurare il plugin Gradle di Kotlin.
 

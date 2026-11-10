@@ -9,7 +9,7 @@ import { accountBalance, cryptoRows, positionFromOps, spentByCategory, valuePosi
 import { iso, monthKey, parseIso } from './lib/dates';
 import { eur } from './lib/format';
 import { fetchBalance } from './services/blockchain';
-import { categorize, isDuplicate, parseWalletNotification, rulePatternFor, WALLET_PACKAGES, type RawNotification } from './services/gpayParser';
+import { categorize, explainWalletNotification, isDuplicate, rulePatternFor, WALLET_PACKAGES, type RawNotification } from './services/gpayParser';
 import { notifyNow, onNotificationAction, registerActions, rescheduleAll } from './services/localNotifications';
 import { refreshIntervalMs, refreshPrices, simulating } from './services/prices';
 import { startWalletListener } from './services/walletListener';
@@ -177,18 +177,32 @@ function makeActions(repos: Repos, get: () => Dump, set: SetData, setUi: (p: Par
     },
 
     /** Notifica di Google Wallet ricevuta dal listener nativo. */
-    async ingestWalletNotification(n: RawNotification) {
-      if (!WALLET_PACKAGES.includes(n.packageName)) return;
+    /**
+     * Notifica di pagamento ricevuta dal listener nativo (Google Wallet, Revolut).
+     * Restituisce l'esito, mostrato nella schermata di diagnostica.
+     */
+    async ingestWalletNotification(n: RawNotification, opts: { anyPackage?: boolean } = {}): Promise<string> {
+      if (!opts.anyPackage && !WALLET_PACKAGES.includes(n.packageName)) return 'app non tra quelle di pagamento';
       const d = get();
       const custom = d.settings.find((s) => s.key === 'gpay_regex')?.value;
-      const p = parseWalletNotification(n, custom);
-      if (!p || isDuplicate(p, d.transactions)) return;
-      const card = d.accounts.find((a) => a.gpay_linked && (!p.cardLast4 || a.card_last4 === p.cardLast4)) ?? d.accounts.find((a) => a.gpay_linked);
+      const r = explainWalletNotification(n, custom);
+      if (!r.ok) return `non registrata: ${r.reason}`;
+      const p = r.payment;
+      if (isDuplicate(p, d.transactions)) return 'già registrata';
+      const byName = (re: RegExp) => d.accounts.find((a) => re.test(a.name) || re.test(a.subtitle));
+      const all = `${n.title} ${n.text} ${n.subText ?? ''}`;
+      const account =
+        (p.cardLast4 ? d.accounts.find((a) => a.card_last4 === p.cardLast4) : undefined) ??
+        (n.packageName === 'com.revolut.revolut' || /revolut/i.test(all) ? byName(/revolut/i) : undefined) ??
+        d.accounts.find((a) => a.gpay_linked) ??
+        d.accounts.find((a) => a.type === 'carta') ??
+        d.accounts[0];
       const category = categorize(p.merchant, d.merchant_rules);
-      await addTransaction({ date: iso(new Date(p.postedAt)), merchant: p.merchant, category, account_id: card?.id ?? d.accounts[0]?.id ?? '', amount: -p.amount, source: 'gpay', note: null, created_at: p.postedAt });
+      await addTransaction({ date: iso(new Date(p.postedAt)), merchant: p.merchant, category, account_id: account?.id ?? '', amount: -p.amount, source: 'gpay', note: null, created_at: p.postedAt });
       if (derive(get()).prefs.gpay) {
         await notify({ type: 'gpay', icon: 'credit-card', target_screen: 'tx', title: `Spesa registrata: ${p.merchant}`, body: `${eur(-p.amount)} · ${category}. Tocca per cambiare categoria.` });
       }
+      return `registrata: ${p.merchant} ${eur(-p.amount)} su ${account?.name ?? 'nessun conto'}`;
     },
 
     async saveAccount(a: Omit<Account, 'id' | 'sort' | 'balance_as_of'> & { id?: string }) {
@@ -641,7 +655,7 @@ export function StoreProvider({ children, db: injected }: { children: ReactNode;
     if (!actions) return;
     const offs: (() => void)[] = [];
     registerActions().catch(() => undefined);
-    startWalletListener((n) => { actions.ingestWalletNotification(n); }).then((off) => offs.push(off));
+    startWalletListener((n) => actions.ingestWalletNotification(n).then(() => undefined)).then((off) => offs.push(off));
     onNotificationAction((actionId, extra) => {
       if (actionId === 'confirm' && extra.paymentId) actions.confirmPac(null, extra.paymentId);
       else if (extra.screen) go(extra.screen as Screen);

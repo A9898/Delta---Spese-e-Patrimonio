@@ -10,7 +10,7 @@ import { eur, num, parseAmount, parseDecimal, pct, qty } from '../lib/format';
 import { decryptBackup, encryptBackup } from '../services/backup';
 import { looksLikeSecret, validateAddress } from '../services/blockchain';
 import { parseOperationsCsv } from '../services/csvImport';
-import { categorize, isDuplicate, parseWalletNotification } from '../services/gpayParser';
+import { categorize, explainWalletNotification, isDuplicate, parseWalletNotification } from '../services/gpayParser';
 import { buildSchedule } from '../services/localNotifications';
 import { derive } from '../store';
 
@@ -191,5 +191,24 @@ describe('stato iniziale vuoto', () => {
     const b = buildBaseline({ notification_prefs: [{ key: 'market', enabled: true }], settings: [{ key: 'seeded', value: '1' }, { key: 'user_name', value: 'Marco' }, { key: 'onboarded', value: '1' }] });
     expect(b.settings).toEqual([{ key: 'onboarded', value: '1' }]);
     expect(b.notification_prefs).toEqual([{ key: 'market', enabled: true }]);
+  });
+});
+
+describe('notifiche di pagamento: formati vari', () => {
+  const n = (title: string, text: string, packageName = 'com.revolut.revolut', subText = '') => ({ packageName, title, text, subText, postedAt: 1000 });
+  it('riconosce Revolut, emoji, punto decimale e spazi non separabili', () => {
+    expect(parseWalletNotification(n('💳 Bar Centrale', 'Hai pagato 3,20 €'))).toMatchObject({ merchant: 'Bar Centrale', amount: 3.2 });
+    expect(parseWalletNotification(n('Revolut', 'Hai speso 3,20 € presso Bar Centrale'))).toMatchObject({ merchant: 'Bar Centrale', amount: 3.2 });
+    expect(parseWalletNotification(n('Payment', 'You paid €3.20 at Bar Centrale'))).toMatchObject({ merchant: 'Bar Centrale', amount: 3.2 });
+    expect(parseWalletNotification(n('Bar Centrale', '€1.234,56 con Revolut ••1234', 'com.google.android.apps.walletnfcrel'))).toMatchObject({ merchant: 'Bar Centrale', amount: 1234.56, cardLast4: '1234' });
+    expect(parseWalletNotification(n('Bar Centrale', '3,20 €', 'com.google.android.apps.walletnfcrel'))).toMatchObject({ amount: 3.2 });
+  });
+  it('spiega perché non riconosce', () => {
+    expect(explainWalletNotification(n('Revolut', 'Hai ricevuto 20,00 € da Mario'))).toEqual({ ok: false, reason: 'sembra un accredito o un rimborso, non una spesa' });
+    expect(explainWalletNotification(n('Revolut', 'Nuove funzioni disponibili'))).toEqual({ ok: false, reason: 'nessun importo in euro nel testo' });
+  });
+  it('lo stesso pagamento da Google Wallet e Revolut si registra una volta', () => {
+    const tx = [{ id: '1', date: '2026-11-10', merchant: 'Bar Centrale', category: 'Ristoranti', account_id: 'r', amount: -3.2, source: 'gpay' as const, note: null, created_at: 1000 }];
+    expect(isDuplicate({ merchant: 'BAR CENTRALE SRL', amount: 3.2, cardLast4: null, postedAt: 30_000 }, tx)).toBe(true);
   });
 });

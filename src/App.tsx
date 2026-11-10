@@ -17,6 +17,7 @@ import { Investments } from './screens/Investments';
 import { Backup, More } from './screens/More';
 import { Report } from './screens/Report';
 import { Transactions } from './screens/Transactions';
+import { GpayDiagnostics } from './screens/GpayDiagnostics';
 import { useStore } from './store';
 
 function useDesktop() {
@@ -32,7 +33,7 @@ function useDesktop() {
 }
 
 const NAV: [Screen, string][] = [['home', 'Patrimonio'], ['tx', 'Movimenti'], ['budget', 'Budget'], ['conti', 'Conti e carte'], ['inv', 'Investimenti'], ['goals', 'Obiettivi'], ['cal', 'Calendario'], ['report', 'Report']];
-const ALTRO: Screen[] = ['budget', 'conti', 'goals', 'cal', 'report', 'altro', 'backup'];
+const ALTRO: Screen[] = ['budget', 'conti', 'goals', 'cal', 'report', 'altro', 'backup', 'gpay'];
 
 export function App() {
   const { data, d, ui, setUi, go } = useStore();
@@ -50,6 +51,7 @@ export function App() {
     report: ['Report', 'Come si muovono entrate e uscite nel tempo.'],
     altro: ['Altro', 'Tutte le sezioni della tua app.'],
     backup: ['Backup e dati', 'I tuoi dati restano sul telefono.'],
+    gpay: ['Pagamenti automatici', 'Google Pay e Revolut: stato e notifiche ricevute.'],
   };
 
   // Tasto indietro di Android: chiude overlay, poi torna alla Home.
@@ -59,7 +61,7 @@ export function App() {
       if (ui.sheet) setUi({ sheet: null });
       else if (ui.notifOpen) setUi({ notifOpen: false });
       else if (ui.onboarding >= 1) setUi({ onboarding: ui.onboarding - 1 });
-      else if (ui.screen === 'backup') go('altro');
+      else if (ui.screen === 'backup' || ui.screen === 'gpay') go('altro');
       else if (ui.screen !== 'home' && ui.onboarding < 0) go(desktop || !ALTRO.includes(ui.screen) || ui.screen === 'altro' ? 'home' : 'altro');
       else CapApp.minimizeApp();
     });
@@ -126,6 +128,7 @@ export function App() {
           {screen === 'report' && <Report />}
           {screen === 'altro' && <More />}
           {screen === 'backup' && <Backup />}
+          {screen === 'gpay' && <GpayDiagnostics />}
         </main>
 
         {!desktop && (

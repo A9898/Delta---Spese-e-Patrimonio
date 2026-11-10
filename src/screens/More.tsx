@@ -12,6 +12,7 @@ export function More() {
     ['Obiettivi', 'Quanto manca ai tuoi traguardi', () => go('goals')],
     ['Calendario', 'Pagamenti programmati del mese', () => go('cal')],
     ['Report', 'Andamento di entrate e uscite', () => go('report')],
+    ['Pagamenti automatici', 'Google Pay e Revolut: stato e notifiche ricevute', () => go('gpay')],
     ['Importa da Cashew', 'Porta qui i movimenti della vecchia app', () => setUi({ sheet: 'importCashew' })],
     ['Backup e dati', 'Esporta o importa un backup cifrato', () => go('backup' as Screen)],
     ['Rivedi introduzione', 'Le funzioni principali in 6 passaggi', () => setUi({ onboarding: 0, notifOpen: false })],
